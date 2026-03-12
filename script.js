@@ -6,7 +6,7 @@
    ★ 請先完成 Apps Script 設定，並將部署後的 URL 填入
    ===================================================================== */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzA2w6Zca-WmweGNVcE6FUJXHArpETFHWKMTlVmTJYdQw9wUZGyqc_R2rL96BxDnNTBUA/exec'; // ← ★ 在此填入您的 GAS Web App 網址
+const API_URL = 'https://script.google.com/macros/s/AKfycbxm5Kky6glM8bv338GVUjO4Y-69k6ICX2mYsxVmM4jnauAixbyxhtgisLnF-yC_4UFX1A/exec'; // ← ★ 在此填入您的 GAS Web App 網址
 
 /* =====================================================================
    全域狀態
@@ -182,11 +182,11 @@ function openDayDetail(date) {
       }
       item.querySelector('.day-detail-delete').addEventListener('click', async (e) => {
         if (!confirm(`確定要將 ${rec.name} 的這筆紀錄從資料庫徹底刪除嗎？\n（此動作無法復原喔！）`)) return;
-        
+
         const btn = e.target;
         btn.disabled = true;
         btn.textContent = '⏳';
-        
+
         try {
           const payload = {
             action: 'deleteRecord',
@@ -639,11 +639,11 @@ function renderActivityFeed() {
     // 刪除按鈕
     li.querySelector('.activity-delete-icon').addEventListener('click', async (e) => {
       if (!confirm(`確定要將 ${rec.name} 在 ${rec.date} 的打卡徹底刪除嗎？\n（資料庫檔案會被移除）`)) return;
-      
+
       const btn = e.target;
       btn.disabled = true;
       btn.textContent = '⏳';
-      
+
       try {
         const payload = {
           action: 'deleteRecord',
@@ -653,7 +653,7 @@ function renderActivityFeed() {
         };
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
         const data = await res.json();
-        
+
         if (data.status === 'ok') {
           await loadData(); // 重新讀取全部資料
         } else {
@@ -662,7 +662,7 @@ function renderActivityFeed() {
       } catch (err) {
         alert('刪除發生錯誤：' + err.message);
       } finally {
-        if(btn) { btn.disabled = false; btn.textContent = '🗑'; }
+        if (btn) { btn.disabled = false; btn.textContent = '🗑'; }
       }
     });
 
