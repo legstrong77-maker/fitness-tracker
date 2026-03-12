@@ -6,7 +6,7 @@
    ★ 請先完成 Apps Script 設定，並將部署後的 URL 填入
    ===================================================================== */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyygHU691pqgEbXsNi5okGXOw5ZpFi1vgHgeU1jdY4PEOiek8TFtgOIcqBPyUvoGEa7Xg/exec'; // ← ★ 在此填入您的 GAS Web App 網址
+const API_URL = 'https://script.google.com/macros/s/AKfycbzA2w6Zca-WmweGNVcE6FUJXHArpETFHWKMTlVmTJYdQw9wUZGyqc_R2rL96BxDnNTBUA/exec'; // ← ★ 在此填入您的 GAS Web App 網址
 
 /* =====================================================================
    全域狀態

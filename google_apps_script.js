@@ -11,9 +11,9 @@
 //    5. 複製部署後的 URL，貼到 script.js 的 API_URL 變數
 // =====================================================================
 
-const SPREADSHEET_ID  = ''; // ← ★ 填入您 Google Sheets 的試算表 ID
-const DRIVE_FOLDER_ID = ''; // ← ★ 填入您 Google Drive 資料夾的 ID
-const SHEET_NAME      = '打卡紀錄';
+const SPREADSHEET_ID = '1Pac4pEMac3QEru2lRPpA0CLpfsESy0c_2MxzwusbGaY'; // ← ★ 填入您 Google Sheets 的試算表 ID
+const DRIVE_FOLDER_ID = '1DHxk7d44WOPYuU4GCgje-y8nCwDV62o-'; // ← ★ 填入您 Google Drive 資料夾的 ID
+const SHEET_NAME = '打卡紀錄';
 const CONFIG_SHEET_NAME = '系統設定';
 
 // =====================================================================
@@ -87,12 +87,12 @@ function addRecord(payload) {
   // 上傳圖片至 Google Drive
   let photoUrl = '';
   if (photo && photo.startsWith('data:image')) {
-    const mimeType  = photo.split(';')[0].split(':')[1];
+    const mimeType = photo.split(';')[0].split(':')[1];
     const base64Data = photo.split(',')[1];
     const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, `${name}_${date}.jpg`);
 
     const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    const file   = folder.createFile(blob);
+    const file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
     // 轉成可直接顯示的 URL 格式
@@ -101,7 +101,7 @@ function addRecord(payload) {
   }
 
   // 寫入 Google Sheets
-  const ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -119,7 +119,7 @@ function addRecord(payload) {
 //  讀取所有紀錄
 // =====================================================================
 function getAllRecords() {
-  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) return [];
 
