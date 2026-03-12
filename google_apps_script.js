@@ -70,6 +70,11 @@ function doPost(e) {
       return jsonResponse(result);
     }
 
+    if (payload.action === 'deleteRecord') {
+      const result = deleteRecord(payload);
+      return jsonResponse(result);
+    }
+
     return jsonResponse({ status: 'error', message: 'Unknown action' });
   } catch (err) {
     return jsonResponse({ status: 'error', message: err.message });
@@ -145,6 +150,43 @@ function getAllRecords() {
     });
   }
   return records;
+}
+
+// =====================================================================
+//  刪除紀錄（從 Sheets 移除該列）
+// =====================================================================
+function deleteRecord(payload) {
+  const { timestamp, name, date } = payload;
+  if (!timestamp || !name) throw new Error('缺少刪除所需的識別資訊');
+
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) throw new Error('找不到打卡紀錄工作表');
+
+  const data = sheet.getDataRange().getValues();
+  // 尋找符合 timestamp, name, date 的列 (注意：data 索引 0 是第一列標題)
+  // Sheets 中的日期與時間可能被轉為 Date 物件，需轉成字串比對
+  let rowIndexToDelete = -1;
+  const tz = Session.getScriptTimeZone();
+
+  for (let i = 1; i < data.length; i++) {
+    const rowTs = data[i][0] instanceof Date ? data[i][0].toISOString() : String(data[i][0]);
+    const rowName = String(data[i][1]);
+    const rowDate = data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], tz, 'yyyy-MM-dd') : String(data[i][3]);
+
+    // 寬鬆比對：如果 timestamp 和 name 皆吻合
+    if (rowTs === timestamp && rowName === name) {
+      rowIndexToDelete = i + 1; // Apps Script 的列數是從 1 開始，陣列索引 i 已經平移，但 i=1 是第 2 列
+      break;
+    }
+  }
+
+  if (rowIndexToDelete > 1) { // 避免刪到標題
+    sheet.deleteRow(rowIndexToDelete);
+    return { status: 'ok', message: '紀錄已徹底刪除' };
+  } else {
+    throw new Error('找不到指定的紀錄，可能已被刪除');
+  }
 }
 
 // =====================================================================

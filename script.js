@@ -15,19 +15,6 @@ let allRecords = [];          // 存放從 Sheets 讀取的所有打卡紀錄
 let selectedDate = null;      // 日曆被點選的日期 (Date object)
 let viewYear, viewMonth;      // 目前日曆顯示的年份 / 月份 (0-indexed)
 
-/* 前端隱藏紀錄（不刪除資料庫） */
-function getHiddenKeys() {
-  try { return JSON.parse(localStorage.getItem('ft_hidden') || '[]'); }
-  catch { return []; }
-}
-function hideRecord(key) {
-  const list = getHiddenKeys();
-  if (!list.includes(key)) { list.push(key); localStorage.setItem('ft_hidden', JSON.stringify(list)); }
-}
-function unhideRecord(key) {
-  const list = getHiddenKeys().filter(k => k !== key);
-  localStorage.setItem('ft_hidden', JSON.stringify(list));
-}
 function recordKey(r) { return `${r.timestamp}_${r.name}_${r.date}`; }
 
 /* =====================================================================
@@ -193,19 +180,34 @@ function openDayDetail(date) {
       if (rec.photoUrl) {
         item.querySelector('.day-detail-thumb').addEventListener('click', (e) => { e.stopPropagation(); openLightbox(rec.photoUrl); });
       }
-      item.querySelector('.day-detail-delete').addEventListener('click', () => {
-        if (!confirm(`確定要隱藏 ${rec.name} 的這筆紀錄嗎？\n（資料庫不會被刪除）`)) return;
-        hideRecord(hKey);
-        allRecords = allRecords.filter(r => recordKey(r) !== hKey);
-        renderCalendar();
-        populateMonthSelectors();
-        renderLeaderboard();
-        renderActivityFeed();
-        updateHeroStats();
-        updateTeamGoal();
-        populateStatsDropdown();
-        // 重新開啟同一天的面板
-        openDayDetail(date);
+      item.querySelector('.day-detail-delete').addEventListener('click', async (e) => {
+        if (!confirm(`確定要將 ${rec.name} 的這筆紀錄從資料庫徹底刪除嗎？\n（此動作無法復原喔！）`)) return;
+        
+        const btn = e.target;
+        btn.disabled = true;
+        btn.textContent = '⏳';
+        
+        try {
+          const payload = {
+            action: 'deleteRecord',
+            timestamp: rec.timestamp,
+            name: rec.name,
+            date: rec.date
+          };
+          const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+          const data = await res.json();
+          if (data.status === 'ok') {
+            await loadData(); // 重新讀取全部資料
+            openDayDetail(date); // 重新展開當天的面板
+          } else {
+            alert('刪除失敗：' + data.message);
+          }
+        } catch (err) {
+          alert('刪除發生錯誤：' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🗑';
+        }
       });
       list.appendChild(item);
     });
@@ -480,11 +482,10 @@ function processInitialData(data) {
   }
 
   if (Array.isArray(data.records)) {
-    const hidden = getHiddenKeys();
     allRecords = data.records.map(r => ({
       ...r,
       date: normalizeDate(r.date),
-    })).filter(r => !hidden.includes(recordKey(r)));
+    }));
     renderCalendar();
     populateMonthSelectors();
     renderLeaderboard();
@@ -636,17 +637,33 @@ function renderActivityFeed() {
     }
 
     // 刪除按鈕
-    li.querySelector('.activity-delete-icon').addEventListener('click', () => {
-      if (!confirm(`確定要隱藏 ${rec.name} 在 ${rec.date} 的打卡紀錄嗎？\n（僅從前端隱藏，資料庫不會被刪除）`)) return;
-      hideRecord(hKey);
-      allRecords = allRecords.filter(r => recordKey(r) !== hKey);
-      renderCalendar();
-      populateMonthSelectors();
-      renderLeaderboard();
-      renderActivityFeed();
-      updateHeroStats();
-      updateTeamGoal();
-      populateStatsDropdown();
+    li.querySelector('.activity-delete-icon').addEventListener('click', async (e) => {
+      if (!confirm(`確定要將 ${rec.name} 在 ${rec.date} 的打卡徹底刪除嗎？\n（資料庫檔案會被移除）`)) return;
+      
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = '⏳';
+      
+      try {
+        const payload = {
+          action: 'deleteRecord',
+          timestamp: rec.timestamp,
+          name: rec.name,
+          date: rec.date
+        };
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const data = await res.json();
+        
+        if (data.status === 'ok') {
+          await loadData(); // 重新讀取全部資料
+        } else {
+          alert('刪除失敗：' + data.message);
+        }
+      } catch (err) {
+        alert('刪除發生錯誤：' + err.message);
+      } finally {
+        if(btn) { btn.disabled = false; btn.textContent = '🗑'; }
+      }
     });
 
     feed.appendChild(li);
