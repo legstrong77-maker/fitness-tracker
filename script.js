@@ -6,7 +6,7 @@
    ★ 請先完成 Apps Script 設定，並將部署後的 URL 填入
    ===================================================================== */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxJwYv4pBpPhD_FlFR8oKodhORefJoZ74HbxtFYR5pks9zT1eEI2FVS6k4o0HwRNs2Giw/exec'; // ← ★ 在此填入您的 GAS Web App 網址
+const API_URL = 'https://script.google.com/macros/s/AKfycbyygHU691pqgEbXsNi5okGXOw5ZpFi1vgHgeU1jdY4PEOiek8TFtgOIcqBPyUvoGEa7Xg/exec'; // ← ★ 在此填入您的 GAS Web App 網址
 
 /* =====================================================================
    全域狀態
@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initModal();
   initLightbox();
   initConfig();
-  initChat();
   initThemeToggle();
   initRandomExercise();
   initPersonalStats();
@@ -441,44 +440,59 @@ function openLightbox(src) {
 }
 
 /* =====================================================================
-   讀取資料（GET 請求）
+   讀取資料（GET 請求）- 包含快取優化 (Stale-while-revalidate)
    ===================================================================== */
 async function loadData() {
   if (!API_URL) return;
 
+  // 1. 先用快取資料秒開介面
+  const cachedData = localStorage.getItem('ft_cached_initial_data');
+  if (cachedData) {
+    try {
+      const data = JSON.parse(cachedData);
+      processInitialData(data);
+    } catch (e) {
+      console.warn('快取解析失敗', e);
+    }
+  }
+
+  // 2. 在背景非同步抓取最新資料
   try {
-    const url = `${API_URL}?action=getRecords`;
+    const url = `${API_URL}?action=getInitialData`;
     const res = await fetch(url);
     const data = await res.json();
 
-    // 同步讀取設定
-    try {
-      const cRes = await fetch(`${API_URL}?action=getConfigs`);
-      const cData = await cRes.json();
-      if (cData.status === 'ok') {
-        window.ft_configs = cData.configs;
-        applyConfigs();
-      }
-    } catch (e) { console.warn('設定讀取失敗', e); }
-
-    if (data.status === 'ok' && Array.isArray(data.records)) {
-      // 正規化所有日期格式為 YYYY-MM-DD
-      const hidden = getHiddenKeys();
-      allRecords = data.records.map(r => ({
-        ...r,
-        date: normalizeDate(r.date),
-      })).filter(r => !hidden.includes(recordKey(r)));
-      renderCalendar();
-      populateMonthSelectors();
-      renderLeaderboard();
-      renderActivityFeed();
-      updateHeroStats();
-      updateTeamGoal();
-      populateStatsDropdown();
-      renderPhotoWall();
+    if (data.status === 'ok') {
+      // 存入快取供下次使用
+      localStorage.setItem('ft_cached_initial_data', JSON.stringify(data));
+      // 更新介面
+      processInitialData(data);
     }
   } catch (err) {
     console.error('資料讀取失敗：', err);
+  }
+}
+
+function processInitialData(data) {
+  if (data.configs) {
+    window.ft_configs = data.configs;
+    applyConfigs();
+  }
+
+  if (Array.isArray(data.records)) {
+    const hidden = getHiddenKeys();
+    allRecords = data.records.map(r => ({
+      ...r,
+      date: normalizeDate(r.date),
+    })).filter(r => !hidden.includes(recordKey(r)));
+    renderCalendar();
+    populateMonthSelectors();
+    renderLeaderboard();
+    renderActivityFeed();
+    updateHeroStats();
+    updateTeamGoal();
+    populateStatsDropdown();
+    renderPhotoWall();
   }
 }
 
@@ -748,130 +762,6 @@ async function saveRemoteConfig(key, value) {
 }
 
 /* =====================================================================
-   聊天室
-   ===================================================================== */
-let chatPollingTimer = null;
-let lastChatTimestamp = '';
-
-function initChat() {
-  const nameInput = document.getElementById('chatName');
-  const msgInput = document.getElementById('chatMsg');
-  const sendBtn = document.getElementById('chatSendBtn');
-
-  // 儲存常用名字
-  const savedName = localStorage.getItem('ft_username') || '';
-  if (savedName) nameInput.value = savedName;
-
-  const send = () => sendChatMessage();
-  sendBtn.addEventListener('click', send);
-  msgInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-  });
-
-  // 開始輪詢 (5秒一次)
-  loadChatMessages();
-  chatPollingTimer = setInterval(loadChatMessages, 5000);
-}
-
-async function sendChatMessage() {
-  const nameInput = document.getElementById('chatName');
-  const msgInput = document.getElementById('chatMsg');
-  const sendBtn = document.getElementById('chatSendBtn');
-
-  const name = nameInput.value.trim();
-  const msg = msgInput.value.trim();
-  if (!name) { nameInput.focus(); return; }
-  if (!msg) { msgInput.focus(); return; }
-  if (!API_URL) return;
-
-  localStorage.setItem('ft_username', name);
-  sendBtn.disabled = true;
-
-  try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'addMessage', name, message: msg }),
-    });
-    msgInput.value = '';
-    await loadChatMessages(); // 立刻重整
-  } catch (err) {
-    console.error('傳送失敗', err);
-  } finally {
-    sendBtn.disabled = false;
-    msgInput.focus();
-  }
-}
-
-async function loadChatMessages() {
-  if (!API_URL) {
-    setChatStatus('⚠️ 尚未設定 API 網址');
-    return;
-  }
-  try {
-    const res = await fetch(`${API_URL}?action=getMessages`);
-    const data = await res.json();
-    if (data.status === 'ok' && Array.isArray(data.messages)) {
-      renderChatMessages(data.messages);
-    } else {
-      // GAS 有回應但 action 不存在（尚未部署新版）
-      setChatStatus('⚠️ 聊天室 API 尚未啟用，請重新部署 GAS');
-    }
-  } catch (_) {
-    setChatStatus('⚠️ 聊天室載入失敗，請確認網路連線');
-  }
-}
-
-function setChatStatus(text) {
-  const feed = document.getElementById('chatMessages');
-  // 避免重複覆蓋正常訊息
-  if (feed.querySelector('.chat-msg-item')) return;
-  feed.innerHTML = `<li class="activity-placeholder" style="font-size:0.8rem">${text}</li>`;
-}
-
-
-function renderChatMessages(messages) {
-  const feed = document.getElementById('chatMessages');
-  const myName = (document.getElementById('chatName').value.trim()) ||
-    (localStorage.getItem('ft_username') || '');
-
-  // 只有有新訊息時才重渲染
-  const latestTs = messages.length ? messages[messages.length - 1].timestamp : '';
-  if (latestTs === lastChatTimestamp && feed.children.length > 1) return;
-  lastChatTimestamp = latestTs;
-
-  feed.innerHTML = '';
-
-  if (!messages.length) {
-    feed.innerHTML = '<li class="activity-placeholder">快來說第一句話吧 😊</li>';
-    return;
-  }
-
-  messages.forEach(m => {
-    const isSelf = m.name === myName;
-    const li = document.createElement('li');
-    li.className = 'chat-msg-item' + (isSelf ? ' self' : '');
-
-    const hue = nameToHue(m.name);
-    const avatarColor = `hsl(${hue},65%,48%)`;
-    const initial = (m.name || '?').charAt(0).toUpperCase();
-    const timeStr = formatRelativeTime(new Date(m.timestamp));
-
-    li.innerHTML = `
-      <div class="chat-mini-avatar" style="background:${avatarColor}">${initial}</div>
-      <div class="chat-bubble-wrap">
-        ${!isSelf ? `<span class="chat-msg-name">${escapeHtml(m.name)}</span>` : ''}
-        <div class="chat-bubble">${escapeHtml(m.message)}</div>
-        <span class="chat-msg-time">${timeStr}</span>
-      </div>
-    `;
-    feed.appendChild(li);
-  });
-
-  // 滾到最新
-  feed.scrollTop = feed.scrollHeight;
-}
-
-/* =====================================================================
    🌙 深色/淺色模式切換
    ===================================================================== */
 function initThemeToggle() {
@@ -1074,8 +964,8 @@ function renderPersonalStats(name) {
     </div>
     <div class="stats-badges">
       ${BADGES.map(b =>
-        `<span class="badge-tag ${totalDays >= b.need ? '' : 'locked'}">${b.icon} ${b.label}</span>`
-      ).join('')}
+    `<span class="badge-tag ${totalDays >= b.need ? '' : 'locked'}">${b.icon} ${b.label}</span>`
+  ).join('')}
     </div>
   `;
 }
@@ -1138,6 +1028,6 @@ function scheduleReminder() {
    ===================================================================== */
 function registerSW() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => { });
   }
 }

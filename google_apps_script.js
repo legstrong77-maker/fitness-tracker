@@ -14,7 +14,6 @@
 const SPREADSHEET_ID  = ''; // ← ★ 填入您 Google Sheets 的試算表 ID
 const DRIVE_FOLDER_ID = ''; // ← ★ 填入您 Google Drive 資料夾的 ID
 const SHEET_NAME      = '打卡紀錄';
-const CHAT_SHEET_NAME = '聊天室';
 const CONFIG_SHEET_NAME = '系統設定';
 
 // =====================================================================
@@ -32,19 +31,20 @@ function doGet(e) {
     }
   }
 
-  if (action === 'getMessages') {
+  if (action === 'getConfigs') {
     try {
-      const messages = getChatMessages();
-      return jsonResponse({ status: 'ok', messages });
+      const configs = getConfigs();
+      return jsonResponse({ status: 'ok', configs });
     } catch (err) {
       return jsonResponse({ status: 'error', message: err.message });
     }
   }
 
-  if (action === 'getConfigs') {
+  if (action === 'getInitialData') {
     try {
+      const records = getAllRecords();
       const configs = getConfigs();
-      return jsonResponse({ status: 'ok', configs });
+      return jsonResponse({ status: 'ok', records, configs });
     } catch (err) {
       return jsonResponse({ status: 'error', message: err.message });
     }
@@ -62,11 +62,6 @@ function doPost(e) {
 
     if (payload.action === 'addRecord') {
       const result = addRecord(payload);
-      return jsonResponse(result);
-    }
-
-    if (payload.action === 'addMessage') {
-      const result = addChatMessage(payload);
       return jsonResponse(result);
     }
 
@@ -201,41 +196,5 @@ function jsonResponse(obj) {
   const output = ContentService.createTextOutput(JSON.stringify(obj));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
-}
-
-// =====================================================================
-//  聊天室支援
-// =====================================================================
-function addChatMessage(payload) {
-  const { name, message } = payload;
-  if (!name || !message) throw new Error('名字和訊息不得為空');
-
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  let sheet = ss.getSheetByName(CHAT_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(CHAT_SHEET_NAME);
-    sheet.appendRow(['時間戳記', '姓名', '訊息']);
-    sheet.setFrozenRows(1);
-  }
-
-  const timestamp = new Date().toISOString();
-  sheet.appendRow([timestamp, name, message]);
-  return { status: 'ok' };
-}
-
-function getChatMessages() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(CHAT_SHEET_NAME);
-  if (!sheet) return [];
-
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
-
-  const rows = data.slice(1).slice(-80);
-  return rows.map(([timestamp, name, message]) => ({
-    timestamp: timestamp instanceof Date ? timestamp.toISOString() : String(timestamp),
-    name: String(name),
-    message: String(message),
-  }));
 }
 
