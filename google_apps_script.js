@@ -15,9 +15,10 @@ const SPREADSHEET_ID  = ''; // ← ★ 填入您 Google Sheets 的試算表 ID
 const DRIVE_FOLDER_ID = ''; // ← ★ 填入您 Google Drive 資料夾的 ID
 const SHEET_NAME      = '打卡紀錄';
 const CHAT_SHEET_NAME = '聊天室';
+const CONFIG_SHEET_NAME = '系統設定';
 
 // =====================================================================
-//  處理 GET 請求（讀取所有紀錄）
+//  處理 GET 請求
 // =====================================================================
 function doGet(e) {
   const action = e.parameter.action;
@@ -40,11 +41,20 @@ function doGet(e) {
     }
   }
 
+  if (action === 'getConfigs') {
+    try {
+      const configs = getConfigs();
+      return jsonResponse({ status: 'ok', configs });
+    } catch (err) {
+      return jsonResponse({ status: 'error', message: err.message });
+    }
+  }
+
   return jsonResponse({ status: 'error', message: 'Unknown action' });
 }
 
 // =====================================================================
-//  處理 POST 請求（新增打卡紀錄）
+//  處理 POST 請求
 // =====================================================================
 function doPost(e) {
   try {
@@ -57,6 +67,11 @@ function doPost(e) {
 
     if (payload.action === 'addMessage') {
       const result = addChatMessage(payload);
+      return jsonResponse(result);
+    }
+
+    if (payload.action === 'setConfig') {
+      const result = setConfigValue(payload.key, payload.value);
       return jsonResponse(result);
     }
 
@@ -106,7 +121,7 @@ function addRecord(payload) {
 }
 
 // =====================================================================
-//  讀取所有紀錄（從 Sheets）
+//  讀取所有紀錄
 // =====================================================================
 function getAllRecords() {
   const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -120,7 +135,6 @@ function getAllRecords() {
   const records = [];
   for (let i = 1; i < data.length; i++) {
     const [timestamp, name, description, date, photoUrl] = data[i];
-    // Sheets 會自動把日期字串轉成 Date 物件，需用 formatDate 轉回 YYYY-MM-DD
     const dateStr = date instanceof Date
       ? Utilities.formatDate(date, tz, 'yyyy-MM-dd')
       : String(date);
@@ -138,9 +152,50 @@ function getAllRecords() {
   return records;
 }
 
+// =====================================================================
+//  設定儲存 (Key-Value)
+// =====================================================================
+function getConfigs() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+  if (!sheet) return {};
+
+  const data = sheet.getDataRange().getValues();
+  const configs = {};
+  for (let i = 0; i < data.length; i++) {
+    const [key, value] = data[i];
+    if (key) configs[key] = value;
+  }
+  return configs;
+}
+
+function setConfigValue(key, value) {
+  if (!key) throw new Error('Key 不能為空');
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG_SHEET_NAME);
+  }
+
+  const data = sheet.getDataRange().getValues();
+  let foundRow = -1;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i][0] === key) {
+      foundRow = i + 1;
+      break;
+    }
+  }
+
+  if (foundRow !== -1) {
+    sheet.getRange(foundRow, 2).setValue(value);
+  } else {
+    sheet.appendRow([key, value]);
+  }
+  return { status: 'ok' };
+}
 
 // =====================================================================
-//  工具：回傳 JSON 並設定 CORS Header
+//  工具：回饋 JSON
 // =====================================================================
 function jsonResponse(obj) {
   const output = ContentService.createTextOutput(JSON.stringify(obj));
@@ -149,7 +204,7 @@ function jsonResponse(obj) {
 }
 
 // =====================================================================
-//  聊天室：新增訊息
+//  聊天室支援
 // =====================================================================
 function addChatMessage(payload) {
   const { name, message } = payload;
@@ -165,13 +220,9 @@ function addChatMessage(payload) {
 
   const timestamp = new Date().toISOString();
   sheet.appendRow([timestamp, name, message]);
-
   return { status: 'ok' };
 }
 
-// =====================================================================
-//  聊天室：讀取訊息（最新 80 筆）
-// =====================================================================
 function getChatMessages() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(CHAT_SHEET_NAME);
@@ -180,7 +231,6 @@ function getChatMessages() {
   const data = sheet.getDataRange().getValues();
   if (data.length <= 1) return [];
 
-  // 只取最後 80 筆
   const rows = data.slice(1).slice(-80);
   return rows.map(([timestamp, name, message]) => ({
     timestamp: timestamp instanceof Date ? timestamp.toISOString() : String(timestamp),

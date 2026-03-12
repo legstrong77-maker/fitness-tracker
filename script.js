@@ -69,15 +69,21 @@ function initCollapsibles() {
 }
 
 /* =====================================================================
-   公告欄 — 自動儲存至 localStorage
+   公告欄 — 雲端同步
    ===================================================================== */
 function initAnnouncement() {
   const el = document.getElementById('announcementText');
-  const saved = localStorage.getItem('ft_announcement');
-  if (saved) el.textContent = saved;
+  // 優先顯示全域變數中的雲端設定，若無則看本地 (過渡期)
+  const remote = window.ft_configs?.announcement;
+  if (remote) el.textContent = remote;
+  else {
+    const saved = localStorage.getItem('ft_announcement');
+    if (saved) el.textContent = saved;
+  }
 
   el.addEventListener('blur', () => {
-    localStorage.setItem('ft_announcement', el.textContent.trim());
+    const val = el.textContent.trim();
+    saveRemoteConfig('announcement', val);
   });
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
@@ -445,6 +451,16 @@ async function loadData() {
     const res = await fetch(url);
     const data = await res.json();
 
+    // 同步讀取設定
+    try {
+      const cRes = await fetch(`${API_URL}?action=getConfigs`);
+      const cData = await cRes.json();
+      if (cData.status === 'ok') {
+        window.ft_configs = cData.configs;
+        applyConfigs();
+      }
+    } catch (e) { console.warn('設定讀取失敗', e); }
+
     if (data.status === 'ok' && Array.isArray(data.records)) {
       // 正規化所有日期格式為 YYYY-MM-DD
       const hidden = getHiddenKeys();
@@ -692,20 +708,43 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 /* =====================================================================
-   獎勵欄 — 自動儲存至 localStorage
+   獎勵欄 — 雲端同步
    ===================================================================== */
 function initRewards() {
   const el = document.getElementById('rewardsBody');
-  const saved = localStorage.getItem('ft_rewards');
-  if (saved) el.innerHTML = saved;
+  const remote = window.ft_configs?.rewards;
+  if (remote) el.innerHTML = remote;
+  else {
+    const saved = localStorage.getItem('ft_rewards');
+    if (saved) el.innerHTML = saved;
+  }
 
   el.addEventListener('blur', () => {
-    localStorage.setItem('ft_rewards', el.innerHTML);
+    saveRemoteConfig('rewards', el.innerHTML);
   });
   el.addEventListener('keydown', (e) => {
-    // Shift+Enter 換行, Enter 儲存就好
     if (e.key === 'Escape') el.blur();
   });
+}
+
+function applyConfigs() {
+  if (!window.ft_configs) return;
+  const ann = window.ft_configs.announcement;
+  const rew = window.ft_configs.rewards;
+  if (ann) document.getElementById('announcementText').textContent = ann;
+  if (rew) document.getElementById('rewardsBody').innerHTML = rew;
+}
+
+async function saveRemoteConfig(key, value) {
+  if (!API_URL) return;
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'setConfig', key, value }),
+    });
+  } catch (e) {
+    console.error(`設定儲存失敗 (${key}):`, e);
+  }
 }
 
 /* =====================================================================
