@@ -460,8 +460,9 @@ async function loadData() {
 
   // 2. 在背景非同步抓取最新資料
   try {
-    const url = `${API_URL}?action=getInitialData`;
-    const res = await fetch(url);
+    // 加入隨機時間戳避免 Safari/iOS 強制快取 GET 請求
+    const url = `${API_URL}?action=getInitialData&_t=${new Date().getTime()}`;
+    const res = await fetch(url, { cache: 'no-store' });
     const data = await res.json();
 
     if (data.status === 'ok') {

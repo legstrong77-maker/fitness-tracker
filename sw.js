@@ -1,5 +1,5 @@
 // Service Worker — 基本離線快取
-const CACHE_NAME = 'fitness-tracker-v3';
+const CACHE_NAME = 'fitness-tracker-v4';
 const ASSETS = [
   './',
   './index.html',
