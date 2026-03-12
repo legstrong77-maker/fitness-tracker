@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>運動打卡日曆 | Fitness Challenge</title>
+  <meta name="description" content="一個讓大家每天上傳運動照片、互相督促的打卡日曆平台。" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#101612" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;700;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ===== ANNOUNCEMENT BANNER ===== -->
+  <header class="announcement-bar" id="announcementBar">
+    <div class="announcement-inner">
+      <span class="announcement-icon">📢</span>
+      <p class="announcement-text" id="announcementText" contenteditable="true" spellcheck="false">
+        點此輸入公告內容，例如：本月目標每人運動 20 天，加油！💪
+      </p>
+      <span class="announcement-edit-hint">（點擊可直接編輯）</span>
+      <div class="toolbar-btns">
+        <button class="icon-btn" id="themeToggle" title="切換深/淺色模式">🌙</button>
+        <button class="icon-btn" id="reminderBtn" title="設定打卡提醒">🔔</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO SECTION ===== -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">🏆 每日打卡挑戰</div>
+      <h1>動起來，一起更好！</h1>
+      <p>每天上傳一張運動照，讓大家看見你的努力，讓我們一起運動^^ </p>
+    </div>
+    <div class="hero-stats" id="heroStats">
+      <div class="stat-card">
+        <span class="stat-number" id="totalCheckins">0</span>
+        <span class="stat-label">本月打卡次數</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number" id="totalMembers">0</span>
+        <span class="stat-label">參與人數</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number" id="todayCheckins">0</span>
+        <span class="stat-label">今日打卡</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 🎯 TEAM GOAL PROGRESS ===== -->
+  <section class="team-goal-section" id="teamGoalSection">
+    <div class="team-goal-inner">
+      <div class="team-goal-header">
+        <span>🎯 本月團隊挑戰目標</span>
+        <span class="team-goal-controls">
+          <span class="team-goal-label" id="teamGoalLabel">0 / 100 次</span>
+          <button class="goal-adj-btn" id="goalMinus" title="減少目標">−</button>
+          <button class="goal-adj-btn" id="goalPlus" title="增加目標">+</button>
+        </span>
+      </div>
+      <div class="team-goal-bar">
+        <div class="team-goal-fill" id="teamGoalFill" style="width:0%"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAIN LAYOUT ===== -->
+  <main class="main-layout">
+
+    <!-- === CALENDAR === -->
+    <section class="calendar-section card">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2 class="section-title">📅 打卡日曆</h2>
+          <div class="month-nav">
+            <button id="prevMonth" class="nav-btn" aria-label="上一個月">&#8249;</button>
+            <span id="currentMonthLabel" class="month-label"></span>
+            <button id="nextMonth" class="nav-btn" aria-label="下一個月">&#8250;</button>
+          </div>
+        </div>
+      </div>
+      <div class="calendar-grid-header">
+        <span>日</span><span>一</span><span>二</span><span>三</span>
+        <span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </section>
+
+    <!-- === SIDE PANEL === -->
+    <aside class="side-panel">
+
+      <!-- ★ Rewards Box -->
+      <section class="rewards-section card">
+        <div class="section-header">
+          <h2 class="section-title">🎁 獎勵內容</h2>
+          <span class="announcement-edit-hint">（點擊可編輯）</span>
+        </div>
+        <div class="rewards-body" id="rewardsBody" contenteditable="true" spellcheck="false">
+          🥇 第一名：神秘大禮一份！<br>
+          🥈 第二名：咖啡券 x2<br>
+          🥉 第三名：飲料兌換券 x1<br>
+          💪 全勤者：特別榮譽徽章
+        </div>
+      </section>
+
+      <!-- Leaderboard -->
+      <section class="leaderboard-section card">
+        <div class="section-header">
+          <h2 class="section-title">🏅 排行榜</h2>
+          <span class="refresh-hint" id="refreshBtn">↺ 重新整理</span>
+        </div>
+        <div class="month-selector-row">
+          <select id="leaderboardMonthSelect" class="month-select"></select>
+        </div>
+        <ol class="leaderboard-list" id="leaderboardList">
+          <li class="leaderboard-placeholder">載入中...</li>
+        </ol>
+      </section>
+
+      <!-- ★ Personal Stats -->
+      <section class="personal-stats-section card" id="personalStatsSection">
+        <div class="section-header">
+          <h2 class="section-title">📊 我的統計</h2>
+        </div>
+        <div class="month-selector-row">
+          <select id="statsMonthSelect" class="month-select"></select>
+        </div>
+        <div class="personal-stats-lookup">
+          <select id="statsNameSelect">
+            <option value="">— 選擇成員 —</option>
+          </select>
+        </div>
+        <div class="personal-stats-body" id="personalStatsBody">
+          <p class="activity-placeholder">選擇成員即可查看個人資料 📋</p>
+        </div>
+      </section>
+
+      <!-- Activity Feed -->
+      <section class="activity-section card">
+        <div class="section-header">
+          <h2 class="section-title">⚡ 即時動態</h2>
+        </div>
+        <ul class="activity-feed" id="activityFeed">
+          <li class="activity-placeholder">載入中...</li>
+        </ul>
+      </section>
+
+      <!-- ★ Chat Room (collapsible, default collapsed) -->
+      <section class="chat-section card collapsible collapsed" id="chatSection">
+        <div class="section-header collapsible-header" data-target="chatSection">
+          <h2 class="section-title">💬 聊天室</h2>
+          <span class="collapse-toggle">▼</span>
+        </div>
+        <div class="collapsible-body">
+          <ul class="chat-messages" id="chatMessages">
+            <li class="activity-placeholder">載入中...</li>
+          </ul>
+          <div class="chat-input-area">
+            <input type="text" id="chatName" class="chat-name-input" placeholder="你的名字" maxlength="10" />
+            <div class="chat-msg-row">
+              <input type="text" id="chatMsg" class="chat-msg-input" placeholder="說點什麼吧…" maxlength="80" />
+              <button class="chat-send-btn" id="chatSendBtn" aria-label="送出">➤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ★ Music Player (collapsible, default collapsed) -->
+      <section class="music-section card collapsible collapsed" id="musicSection">
+        <div class="section-header collapsible-header" data-target="musicSection">
+          <h2 class="section-title">🎵 運動放鬆音樂</h2>
+          <span class="collapse-toggle">▼</span>
+        </div>
+        <div class="collapsible-body">
+          <div style="border-radius: var(--radius-sm); overflow: hidden;">
+            <iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay"
+              src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/101375747&color=%238db596&auto_play=false&hide_related=false&show_comments=false&show_user=false&show_reposts=false&show_teaser=false"></iframe>
+          </div>
+        </div>
+      </section>
+
+    </aside>
+  </main>
+
+  <!-- ===== DAY DETAIL PANEL ===== -->
+  <div class="day-detail-overlay" id="dayDetailOverlay">
+    <div class="day-detail-panel">
+      <button class="modal-close" id="dayDetailClose">✕</button>
+      <h3 class="day-detail-title" id="dayDetailTitle">3 月 12 日</h3>
+      <div class="day-detail-list" id="dayDetailList">
+        <!-- populated by JS -->
+      </div>
+      <button class="btn-primary day-detail-checkin-btn" id="dayDetailCheckinBtn">💪 我也來打卡！</button>
+    </div>
+  </div>
+
+  <!-- ===== 🎲 RANDOM EXERCISE MODAL ===== -->
+  <div class="random-exercise-fab" id="randomExerciseFab" title="🎲 隨機推薦今日運動">🎲</div>
+  <div class="random-exercise-popup" id="randomExercisePopup">
+    <div class="random-exercise-card">
+      <button class="modal-close" id="randomExerciseClose">✕</button>
+      <div class="random-exercise-icon" id="randomExerciseIcon">🏃</div>
+      <h3 id="randomExerciseTitle">跑步 20 分鐘</h3>
+      <p id="randomExerciseDesc">到附近公園跑個兩圈，讓心跳加速一下！</p>
+      <button class="btn-primary" id="randomExerciseReroll">🎲 再抽一個</button>
+    </div>
+  </div>
+
+  <!-- ===== UPLOAD MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" aria-label="關閉">✕</button>
+      <div class="modal-header">
+        <div class="modal-icon">💪</div>
+        <h3 id="modalTitle">運動打卡！</h3>
+        <p id="modalDateLabel" class="modal-date"></p>
+      </div>
+
+      <div class="form-group">
+        <label for="userName">你的名字</label>
+        <input type="text" id="userName" placeholder="例如：小明" maxlength="10" />
+      </div>
+
+      <div class="form-group">
+        <label for="exerciseDesc">運動描述 (選填)</label>
+        <input type="text" id="exerciseDesc" placeholder="例如：跑步 30 分鐘" maxlength="30" />
+      </div>
+
+      <div class="form-group">
+        <label>上傳運動照片</label>
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="photoInput" accept="image/*" />
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <span class="upload-icon">📸</span>
+            <span>點擊或拖曳上傳照片</span>
+          </div>
+          <img class="upload-preview" id="uploadPreview" alt="預覽圖" />
+        </div>
+      </div>
+
+      <button class="btn-primary" id="submitBtn">
+        <span id="submitText">✓ 送出打卡</span>
+        <span id="submitSpinner" class="spinner hidden"></span>
+      </button>
+
+      <p class="modal-footer-note" id="modalResult"></p>
+    </div>
+  </div>
+
+  <!-- ===== LIGHTBOX ===== -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <img class="lightbox-img" id="lightboxImg" alt="放大圖片" />
+  </div>
+
+  <!-- ===== CONFIG NOTICE ===== -->
+  <div class="config-notice" id="configNotice">
+    <div class="config-notice-card">
+      <h3>⚙️ 尚未設定後端 API</h3>
+      <p>請在 <strong>script.js</strong> 最上方填入您的 <strong>Google Apps Script Web App 網址</strong>，才能啟用資料存取功能。</p>
+      <button id="configNoticeClose" class="btn-primary">我知道了</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
