@@ -81,16 +81,42 @@ function initAnnouncement() {
 /* =====================================================================
    日曆 — 導覽按鈕
    ===================================================================== */
+/* 取得目前檢視名稱（YYYY-MM），供各表共用 */
+function viewYM() {
+  return `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+}
+
+/* 同步所有下拉選單到目前檢視月份 */
+function syncSelectsToViewMonth() {
+  const ym = viewYM();
+  const lbSel = document.getElementById('leaderboardMonthSelect');
+  const stSel = document.getElementById('statsMonthSelect');
+  if (lbSel && [...lbSel.options].some(o => o.value === ym)) lbSel.value = ym;
+  if (stSel && [...stSel.options].some(o => o.value === ym)) stSel.value = ym;
+}
+
 function initCalendarNav() {
   document.getElementById('prevMonth').addEventListener('click', () => {
     viewMonth--;
     if (viewMonth < 0) { viewMonth = 11; viewYear--; }
     renderCalendar();
+    syncSelectsToViewMonth();
+    renderLeaderboard();
+    renderActivityFeed();
+    updateHeroStats();
+    updateTeamGoal();
+    populateStatsDropdown();
   });
   document.getElementById('nextMonth').addEventListener('click', () => {
     viewMonth++;
     if (viewMonth > 11) { viewMonth = 0; viewYear++; }
     renderCalendar();
+    syncSelectsToViewMonth();
+    renderLeaderboard();
+    renderActivityFeed();
+    updateHeroStats();
+    updateTeamGoal();
+    populateStatsDropdown();
   });
 }
 
@@ -605,10 +631,15 @@ function renderActivityFeed() {
   const feed = document.getElementById('activityFeed');
   feed.innerHTML = '';
 
-  const sorted = [...allRecords].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
+  // 只顯示目前檢視月份的動態
+  const ym = viewYM();
+  const sorted = [...allRecords]
+    .filter(r => r.date && r.date.startsWith(ym))
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 20);
 
   if (!sorted.length) {
-    feed.innerHTML = '<li class="activity-placeholder">尚無打卡動態 💤</li>';
+    feed.innerHTML = '<li class="activity-placeholder">該月尚無打卡動態 💤</li>';
     return;
   }
 
@@ -676,16 +707,17 @@ function renderActivityFeed() {
    Hero 統計
    ===================================================================== */
 function updateHeroStats() {
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const today = formatDateStr(now);
+  const ym = viewYM();
+  const today = formatDateStr(new Date());
 
   const monthRecs = allRecords.filter(r => r.date && r.date.startsWith(ym));
-  const todayRecs = allRecords.filter(r => r.date === today);
-  const allNames = new Set(allRecords.map(r => r.name));
+  // 「今日打卡」僅在檢視當月時展示
+  const isCurrentMonth = ym === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const todayRecs = isCurrentMonth ? allRecords.filter(r => r.date === today) : [];
+  const monthNames = new Set(monthRecs.map(r => r.name));
 
   animateNumber('totalCheckins', monthRecs.length);
-  animateNumber('totalMembers', allNames.size);
+  animateNumber('totalMembers', monthNames.size);
   animateNumber('todayCheckins', todayRecs.length);
 }
 
@@ -861,8 +893,7 @@ function initRandomExercise() {
 let teamGoal = parseInt(localStorage.getItem('ft_team_goal')) || 100;
 
 function updateTeamGoal() {
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const ym = viewYM();
   const monthRecs = allRecords.filter(r => r.date && r.date.startsWith(ym));
   const count = monthRecs.length;
   const pct = Math.min(100, Math.round(count / teamGoal * 100));
