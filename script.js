@@ -890,7 +890,8 @@ function initRandomExercise() {
 /* =====================================================================
    🎯 團隊目標進度
    ===================================================================== */
-let teamGoal = parseInt(localStorage.getItem('ft_team_goal')) || 100;
+/* 挑戰目標鎖死為 150 次 */
+const teamGoal = 150;
 
 function updateTeamGoal() {
   const ym = viewYM();
@@ -901,18 +902,6 @@ function updateTeamGoal() {
   document.getElementById('teamGoalLabel').textContent = `${count} / ${teamGoal} 次`;
   document.getElementById('teamGoalFill').style.width = `${pct}%`;
 }
-
-// +/- 按鈕事件
-document.getElementById('goalPlus').addEventListener('click', () => {
-  teamGoal += 10;
-  localStorage.setItem('ft_team_goal', teamGoal);
-  updateTeamGoal();
-});
-document.getElementById('goalMinus').addEventListener('click', () => {
-  teamGoal = Math.max(10, teamGoal - 10);
-  localStorage.setItem('ft_team_goal', teamGoal);
-  updateTeamGoal();
-});
 
 /* =====================================================================
    📸 照片牆
