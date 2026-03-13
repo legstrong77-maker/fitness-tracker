@@ -25,21 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
   viewYear = now.getFullYear();
   viewMonth = now.getMonth();
 
-  initAnnouncement();
-  initRewards();
-  initCalendarNav();
-  renderCalendar();
-  initModal();
-  initLightbox();
-  initConfig();
-  initThemeToggle();
-  initRandomExercise();
-  initPersonalStats();
-  initReminder();
-  initCollapsibles();
-  registerSW();
+  const safeCall = (fn) => { try { fn(); } catch(e) { console.error('Init error:', fn.name, e); } };
 
-  loadData(); // 向 Google Sheets 要資料
+  safeCall(initAnnouncement);
+  safeCall(initRewards);
+  safeCall(initCalendarNav);
+  safeCall(renderCalendar);
+  safeCall(initModal);
+  safeCall(initLightbox);
+  safeCall(initConfig);
+  safeCall(initThemeToggle);
+  safeCall(initRandomExercise);
+  safeCall(initPersonalStats);
+  safeCall(initReminder);
+  safeCall(initCollapsibles);
+  safeCall(registerSW);
+
+  loadData(); // 向 Google Sheets 要資料 — 永遠必須執行！
 });
 
 /* =====================================================================
@@ -1022,7 +1024,7 @@ function initReminder() {
   });
 
   // 如果已經授權，啟動排程
-  if (Notification.permission === 'granted') {
+  if ('Notification' in window && Notification.permission === 'granted') {
     scheduleReminder();
   }
 }
