@@ -1,32 +1,18 @@
-// Service Worker — 基本離線快取
-const CACHE_NAME = 'fitness-tracker-v5';
-const ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './script.js',
-  './bg.png',
-];
-
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
+// Kill switch for service worker
+self.addEventListener('install', function(e) {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', function(e) {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (e) => {
-  // 網路優先，失敗才用快取
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(function() {
+      self.registration.unregister();
+    })
   );
 });
