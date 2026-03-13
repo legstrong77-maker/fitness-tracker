@@ -1,10 +1,11 @@
 // Service Worker — 基本離線快取
-const CACHE_NAME = 'fitness-tracker-v4';
+const CACHE_NAME = 'fitness-tracker-v5';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './script.js',
+  './bg.png',
 ];
 
 self.addEventListener('install', (e) => {

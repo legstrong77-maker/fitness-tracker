@@ -494,7 +494,6 @@ function processInitialData(data) {
     updateHeroStats();
     updateTeamGoal();
     populateStatsDropdown();
-    renderPhotoWall();
   }
 }
 

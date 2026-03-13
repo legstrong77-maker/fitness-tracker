@@ -40,7 +40,7 @@ body {
   background-color: var(--bg-primary);
   background-image: 
     linear-gradient(to bottom, rgba(16, 22, 18, 0.6), rgba(16, 22, 18, 0.9)),
-    url('file:///C:/Users/Leg/.gemini/antigravity/brain/76f1005f-e45d-4199-b468-2b0c4c88d586/nature_fitness_bg_1773289341289.png');
+    url('bg.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
