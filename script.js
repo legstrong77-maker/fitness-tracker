@@ -786,16 +786,27 @@ async function saveRemoteConfig(key, value) {
 function initThemeToggle() {
   const btn = document.getElementById('themeToggle');
   const saved = localStorage.getItem('ft_theme');
-  if (saved === 'light') {
-    document.body.classList.add('light-mode');
+
+  // 預設淺色模式；若使用者上次選了深色，才套用深色
+  if (saved === 'dark') {
+    document.documentElement.dataset.theme = 'dark';
+    btn.textContent = '🌙';
+  } else {
+    delete document.documentElement.dataset.theme;
     btn.textContent = '☀️';
   }
 
   btn.addEventListener('click', () => {
-    document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
-    btn.textContent = isLight ? '☀️' : '🌙';
-    localStorage.setItem('ft_theme', isLight ? 'light' : 'dark');
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    if (isDark) {
+      delete document.documentElement.dataset.theme;
+      btn.textContent = '☀️';
+      localStorage.setItem('ft_theme', 'light');
+    } else {
+      document.documentElement.dataset.theme = 'dark';
+      btn.textContent = '🌙';
+      localStorage.setItem('ft_theme', 'dark');
+    }
   });
 }
 
