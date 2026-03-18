@@ -524,7 +524,8 @@ function initShareModal() {
 
       // 使用 Promise.race 防止意外卡死 (最多等待 10 秒)
       const canvasPromise = window.htmlToImage.toPng(cardBox, {
-        pixelRatio: window.devicePixelRatio > 1 ? 2 : 1, // 根據設備調整解析度
+        pixelRatio: 3, // 強制使用 3 倍高畫質渲染 (解決畫質差的問題)
+        style: { margin: '0' }, // 確保截圖時 margin auto 不影響定位
         backgroundColor: '#fdfaf3', // 手動補上底色
         cacheBust: true
       });
