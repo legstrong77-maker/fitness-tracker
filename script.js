@@ -522,21 +522,19 @@ function initShareModal() {
       // 短暫延遲讓瀏覽器重繪字體或圖片
       await new Promise(r => setTimeout(r, 400));
 
-      // 使用 Promise.race 防止 html2canvas 永久卡死 (最多等待 8 秒)
-      const canvasPromise = html2canvas(cardBox, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1, // 根據設備調整解析度，減輕手機負擔
-        useCORS: true,
-        allowTaint: true, // 增加跨域容錯
-        backgroundColor: null
+      // 使用 Promise.race 防止意外卡死 (最多等待 10 秒)
+      const canvasPromise = window.htmlToImage.toPng(cardBox, {
+        pixelRatio: window.devicePixelRatio > 1 ? 2 : 1, // 根據設備調整解析度
+        backgroundColor: '#fdfaf3', // 手動補上底色
+        cacheBust: true
       });
 
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('圖片產生逾時，請檢查網路或稍後重試。')), 8000)
+        setTimeout(() => reject(new Error('圖片產生逾時，請檢查網路或稍後重試。')), 10000)
       );
 
-      const canvas = await Promise.race([canvasPromise, timeoutPromise]);
-      
-      currentShareImage = canvas.toDataURL('image/png');
+      // htmlToImage.toPng 直接回傳 base64 字串 (dataUrl)
+      currentShareImage = await Promise.race([canvasPromise, timeoutPromise]);
       previewImg.src = currentShareImage;
       
       // 切換 UI
