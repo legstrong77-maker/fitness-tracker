@@ -1557,6 +1557,67 @@ body {
 }
 .activity-delete-icon:hover { opacity: 0.8; transform: scale(1.2); }
 
+/* ---------- User Stats Modal ---------- */
+#userStatsModal .modal {
+  max-width: 380px;
+  padding: 30px 24px;
+}
+#userStatsTitle {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 700;
+}
+.stats-summary-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 15px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+.stats-summary-box p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stats-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 15px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+body.light-mode .stats-item {
+  background: rgba(0, 0, 0, 0.02);
+}
+.stats-item span {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.stats-item strong {
+  color: var(--accent-primary);
+  font-size: 1.1rem;
+}
+.stats-comment {
+  background: linear-gradient(135deg, rgba(141,181,150,0.1), rgba(220,167,106,0.1));
+  border-left: 4px solid var(--accent-primary);
+  padding: 15px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 /* ---------- Light Mode ---------- */
 body.light-mode {
   --bg-primary: #f5f7f4;

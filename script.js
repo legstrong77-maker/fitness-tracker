@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
   safeCall(initThemeToggle);
   safeCall(initRandomExercise);
   safeCall(initPersonalStats);
-  safeCall(initReminder);
   safeCall(initCollapsibles);
+  safeCall(initUserStatsModal);
   safeCall(registerSW);
 
   loadData(); // 向 Google Sheets 要資料 — 永遠必須執行！
@@ -883,6 +883,14 @@ function renderLeaderboard() {
       <span class="rank-count">${item.count}</span>
       <span class="rank-unit">天</span>
     `;
+    
+    // 點擊顯示當月統計
+    li.style.cursor = 'pointer';
+    li.title = '點擊查看當月統計';
+    li.addEventListener('click', () => {
+      openUserStatsModal(item.name, ym, item.count);
+    });
+
     list.appendChild(li);
   });
 
@@ -1348,4 +1356,108 @@ function registerSW() {
       }
     });
   }
+}
+
+/* =====================================================================
+   使用者當月統計 Modal
+   ===================================================================== */
+function initUserStatsModal() {
+  const modal = document.getElementById('userStatsModal');
+  const closeBtn = document.getElementById('userStatsClose');
+
+  const close = () => modal.classList.remove('open');
+  closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) close();
+  });
+}
+
+function openUserStatsModal(name, ym, totalDays) {
+  const modal = document.getElementById('userStatsModal');
+  const title = document.getElementById('userStatsTitle');
+  const totalDaysEl = document.getElementById('userStatsTotalDays');
+  const typesList = document.getElementById('userStatsTypesList');
+  const commentEl = document.getElementById('userStatsComment');
+
+  const [y, m] = ym.split('-');
+  title.textContent = `${name} 的 ${y}年${parseInt(m)}月 紀錄`;
+  totalDaysEl.textContent = totalDays;
+
+  // 過濾出該使用者當月的紀錄
+  const userMonthRecs = allRecords.filter(r => r.name === name && r.date && r.date.startsWith(ym));
+
+  // 統計運動項目
+  // 由於舊資料可能沒有規律的 description，我們試著從 description 中剖析出常見關鍵字
+  const typeCounts = {};
+  const keywords = ['重訓', '有氧', '瑜珈', '球類', '游泳', '自行車', '跑步', '健身房'];
+  let validActivities = 0;
+
+  userMonthRecs.forEach(rec => {
+    let desc = rec.description || '';
+    let found = false;
+    
+    // 優先檢查是否有內建標籤格式 [重訓] 或者是使用者自訂分類字眼
+    const match = desc.match(/^\[(.*?)\]/);
+    if (match) {
+      const type = match[1];
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+      found = true;
+    } else {
+      // 模糊比對常用關鍵字
+      for (const kw of keywords) {
+        if (desc.includes(kw)) {
+          typeCounts[kw] = (typeCounts[kw] || 0) + 1;
+          found = true;
+          break; // 只算主要的一種
+        }
+      }
+    }
+
+    // 若都沒比對到，歸類為「其他」
+    if (!found) {
+      if (desc.trim() !== '') {
+        typeCounts['一般訓練'] = (typeCounts['一般訓練'] || 0) + 1;
+      } else {
+        typeCounts['純打卡'] = (typeCounts['純打卡'] || 0) + 1;
+      }
+    }
+  });
+
+  // 渲染清單
+  typesList.innerHTML = '';
+  const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+  if (sortedTypes.length === 0) {
+    typesList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">本月尚無詳細項目紀錄 🤷</p>';
+  } else {
+    sortedTypes.forEach(([type, count]) => {
+      const item = document.createElement('div');
+      item.className = 'stats-item';
+      item.innerHTML = `<span>${type}</span> <strong>${count} <small style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">次</small></strong>`;
+      typesList.appendChild(item);
+    });
+  }
+
+  // 產生自動評語
+  let comment = '';
+  if (totalDays >= 20) {
+    comment = '太瘋狂了！你幾乎每天都在運動，這份毅力絕對能讓你達成目標！🔥';
+  } else if (totalDays >= 10) {
+    comment = '非常棒的規律性！這個月保持了穩定的運動頻率，請繼續保持這個好習慣！💪';
+  } else if (totalDays >= 5) {
+    comment = '不錯的開始！已經建立起運動的意識了，下個月試著再多給自己一點挑戰吧！✨';
+  } else {
+    comment = '好的開始是成功的一半！雖然次數不多，但願意開始行動就值得鼓勵，下個月繼續加油！🌱';
+  }
+
+  // 加上偏好分析
+  if (sortedTypes.length > 0) {
+    const favorite = sortedTypes[0][0];
+    if (favorite !== '純打卡' && sortedTypes[0][1] >= 2) {
+      comment += `<br><br>👉 看來你這個月特別偏愛「<b>${favorite}</b>」，這是一項很棒的選擇！`;
+    }
+  }
+
+  commentEl.innerHTML = comment;
+  modal.classList.add('open');
 }
