@@ -585,6 +585,11 @@ body {
 
 
 /* ---------- Leaderboard ---------- */
+.leaderboard-section {
+  position: relative;
+  z-index: 10;
+}
+
 .leaderboard-list { list-style: none; }
 
 .leaderboard-item {
@@ -1230,6 +1235,11 @@ body {
 }
 
 /* ---------- Personal Stats ---------- */
+.personal-stats-section {
+  position: relative;
+  z-index: 5;
+}
+
 .month-selector-row {
   margin-bottom: 10px;
 }
