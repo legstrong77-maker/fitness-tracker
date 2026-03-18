@@ -474,10 +474,10 @@ function showShareModal(data) {
   
   const imgEl = document.getElementById('shareImg');
   if (data.photo) {
-    imgEl.src = data.photo;
+    imgEl.style.backgroundImage = `url(${data.photo})`;
     imgEl.classList.remove('hidden');
   } else {
-    imgEl.src = '';
+    imgEl.style.backgroundImage = 'none';
     imgEl.classList.add('hidden');
   }
 

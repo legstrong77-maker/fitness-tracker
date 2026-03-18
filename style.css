@@ -193,12 +193,14 @@ body {
 .envelope-img {
   width: 100%;
   height: 200px; /* 固定高度，讓卡片比例一致 */
-  object-fit: cover; /* 改用 cover，避免照片壓縮或產生大面積留白 */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 4px;
   margin-bottom: 16px;
   border: 4px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  background: #eee;
+  background-color: #eee;
 }
 
 .envelope-footer {
