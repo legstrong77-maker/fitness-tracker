@@ -457,9 +457,14 @@ function compressImage(base64, maxSize) {
 /* =====================================================================
    Share Out Modal 
    ===================================================================== */
+/* =====================================================================
+   Share Out Modal (Canvas 2D Manual Render)
+   ===================================================================== */
 let currentShareImage = null; // Store base64
+let currentShareData = null; // Store user checkin data
 
 function showShareModal(data) {
+  currentShareData = data;
   const modal = document.getElementById('shareOutModal');
   const cardWrap = document.getElementById('shareCardWrap');
   const previewImg = document.getElementById('sharePreviewImg');
@@ -467,7 +472,7 @@ function showShareModal(data) {
   const actionGroup = document.getElementById('shareActionsGroup');
   const instructions = document.getElementById('shareInstructions');
   
-  // 1. Populate data
+  // 1. Populate data for preview HTML
   document.getElementById('shareName').textContent = data.name;
   document.getElementById('shareDate').textContent = data.date;
   document.getElementById('shareDesc').textContent = data.desc || '完成了今日的運動打卡！';
@@ -491,6 +496,133 @@ function showShareModal(data) {
   previewImg.style.display = 'none';
   actionGroup.classList.add('hidden');
   currentShareImage = null;
+}
+
+// === Native Canvas Drawing Engine (100% iOS Compatible) ===
+async function generateShareCardCanvas(data) {
+  const canvas = document.createElement('canvas');
+  const w = 1080;
+  const hasPhoto = !!data.photo;
+  const h = hasPhoto ? 1440 : 660; // 動態高度：無照片則縮短卡片
+  
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  // Background (Cream)
+  ctx.fillStyle = '#fdfaf3';
+  ctx.fillRect(0, 0, w, h);
+
+  // Top Airmail Border
+  ctx.lineWidth = 18;
+  ctx.setLineDash([40, 30]);
+  ctx.strokeStyle = '#cc4242'; // Soft red
+  ctx.beginPath();
+  ctx.moveTo(0, 9);
+  ctx.lineTo(w, 9);
+  ctx.stroke();
+  ctx.setLineDash([]); // reset
+
+  // Wait for font load if API exists
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch(e) {}
+  }
+  const font = '"Klee One", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+
+  // Greeting
+  ctx.fillStyle = '#cc4242';
+  ctx.font = `600 75px ${font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('今天你很棒！', w / 2, 120);
+
+  // Message Name
+  ctx.fillStyle = '#333333';
+  ctx.font = `600 60px ${font}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(`${data.name} 運動了：`, 90, 260);
+
+  // Message Desc
+  ctx.font = `400 55px ${font}`;
+  let desc = data.desc || '完成了今日的運動打卡！';
+  if (desc.length > 25) desc = desc.substring(0, 25) + '...';
+  ctx.fillText(desc, 90, 350);
+
+  // Draw Photo
+  if (hasPhoto) {
+    const boxX = 90;
+    const boxY = 460;
+    const boxW = w - 180;
+    const boxH = 680;
+
+    // Load base64 image
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = data.photo;
+    });
+
+    // Polaroid shadow and border
+    ctx.shadowColor = 'rgba(0,0,0,0.12)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 10;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(boxX - 15, boxY - 15, boxW + 30, boxH + 30);
+    ctx.shadowColor = 'transparent'; // reset
+
+    // Image Background fallback
+    ctx.fillStyle = '#eeeeee';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+
+    // Object-fit: cover logic
+    const imgRatio = img.width / img.height;
+    const boxRatio = boxW / boxH;
+    let sW, sH, sX, sY;
+    if (imgRatio > boxRatio) {
+      sH = img.height;
+      sW = sH * boxRatio;
+      sX = (img.width - sW) / 2;
+      sY = 0;
+    } else {
+      sW = img.width;
+      sH = sW / boxRatio;
+      sX = 0;
+      sY = (img.height - sH) / 2;
+    }
+    
+    // Create clipping mask to ensure photo stays strictly inside the box
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(boxX, boxY, boxW, boxH);
+    ctx.clip();
+    ctx.drawImage(img, sX, sY, sW, sH, boxX, boxY, boxW, boxH);
+    ctx.restore();
+  }
+
+  // Footer Line
+  const footerY = hasPhoto ? 1260 : 480;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([15, 15]);
+  ctx.strokeStyle = '#d1c8b4';
+  ctx.beginPath();
+  ctx.moveTo(90, footerY);
+  ctx.lineTo(w - 90, footerY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Footer text
+  ctx.fillStyle = '#777777';
+  ctx.font = `400 45px ${font}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(data.date, 90, footerY + 30);
+
+  ctx.textAlign = 'right';
+  ctx.fillText('運動打卡日曆', w - 90, footerY + 30);
+
+  // Export 90% quality JPEG for fast parsing and high crispness
+  return canvas.toDataURL('image/jpeg', 0.9);
 }
 
 function initShareModal() {
@@ -519,28 +651,12 @@ function initShareModal() {
       generateBtn.textContent = '⏳ 製作中...';
       generateBtn.disabled = true;
 
-      // 短暫延遲讓瀏覽器重繪字體或圖片
-      await new Promise(r => setTimeout(r, 600));
+      // 短暫延遲確認字體加載與 UI 重繪
+      await new Promise(r => setTimeout(r, 200));
 
-      // 針對 iOS Safari 的修正：第一次預先渲染 (丟棄結果)
-      // 強迫 WebKit 引擎提早把圖片載入並成功繪製到 background cache 中
-      try {
-        await window.htmlToImage.toPng(cardBox, { pixelRatio: 1, style: { margin: '0' } });
-      } catch (e) { /* ignore fallback */ }
-
-      // 第二次正式渲染高畫質
-      const canvasPromise = window.htmlToImage.toPng(cardBox, {
-        pixelRatio: 3, // 強制使用 3 倍高畫質渲染 (解決畫質差的問題)
-        style: { margin: '0' }, // 確保截圖時 margin auto 不影響定位
-        backgroundColor: '#fdfaf3' // 手動補上底色
-      });
-
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('圖片產生逾時，請檢查網路或稍後重試。')), 10000)
-      );
-
-      // htmlToImage.toPng 直接回傳 base64 字串 (dataUrl)
-      currentShareImage = await Promise.race([canvasPromise, timeoutPromise]);
+      // 呼叫全新 100% 安全的手動 HTML5 Canvas 引擎繪製卡片
+      currentShareImage = await generateShareCardCanvas(currentShareData);
+      
       previewImg.src = currentShareImage;
       
       // 切換 UI
