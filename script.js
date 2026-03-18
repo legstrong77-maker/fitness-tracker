@@ -474,7 +474,7 @@ function showShareModal(data) {
   
   const imgEl = document.getElementById('shareImg');
   if (data.photo) {
-    imgEl.style.backgroundImage = `url(${data.photo})`;
+    imgEl.style.backgroundImage = `url("${data.photo}")`;
     imgEl.classList.remove('hidden');
   } else {
     imgEl.style.backgroundImage = 'none';
@@ -526,8 +526,7 @@ function initShareModal() {
       const canvasPromise = window.htmlToImage.toPng(cardBox, {
         pixelRatio: 3, // 強制使用 3 倍高畫質渲染 (解決畫質差的問題)
         style: { margin: '0' }, // 確保截圖時 margin auto 不影響定位
-        backgroundColor: '#fdfaf3', // 手動補上底色
-        cacheBust: true
+        backgroundColor: '#fdfaf3' // 手動補上底色
       });
 
       const timeoutPromise = new Promise((_, reject) => 
