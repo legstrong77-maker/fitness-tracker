@@ -164,21 +164,7 @@ body {
   color: #333;
   text-align: center;
   overflow: hidden;
-}
-
-/* Airmail style top border */
-.envelope-card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 6px;
-  background: repeating-linear-gradient(
-    45deg,
-    #cc4242 0, #cc4242 15px,
-    transparent 15px, transparent 30px,
-    #3b6b98 30px, #3b6b98 45px,
-    transparent 45px, transparent 60px
-  );
+  border-top: 6px dashed #cc4242; /* Soft red ink dashed border for airmail feel */
 }
 
 .envelope-greeting {
