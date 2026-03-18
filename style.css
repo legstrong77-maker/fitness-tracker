@@ -139,6 +139,116 @@ body {
   flex-wrap: wrap;
 }
 
+/* =====================================================================
+   Envelope Share Card (分享打卡卡片)
+   ===================================================================== */
+.share-dialog {
+  max-width: 400px;
+  background: var(--bg-card);
+}
+
+.envelope-card-container {
+  background: var(--bg-card);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+}
+
+.envelope-card {
+  position: relative;
+  background-color: #fdfaf3; /* Light cream paper color */
+  border-radius: 4px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  font-family: 'Klee One', 'Noto Sans TC', sans-serif;
+  color: #333;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Airmail style top border */
+.envelope-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(
+    45deg,
+    #cc4242 0, #cc4242 15px,
+    transparent 15px, transparent 30px,
+    #3b6b98 30px, #3b6b98 45px,
+    transparent 45px, transparent 60px
+  );
+}
+
+.envelope-greeting {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #cc4242; /* Soft red ink */
+  letter-spacing: 0.05em;
+}
+
+.envelope-message {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  text-align: left;
+  padding: 0 10px;
+}
+.envelope-message span {
+  font-weight: 600;
+}
+
+.envelope-img {
+  width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border: 4px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: #eee;
+}
+
+.envelope-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #777;
+  border-top: 1px dashed #d1c8b4;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+/* 預覽圖鎖定高度與寬度，避免手機版撐破版面 */
+.share-preview-img {
+  width: 100%;
+  max-height: 55vh;
+  object-fit: contain;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.share-btn {
+  font-size: 0.9rem;
+  padding: 12px;
+}
+.share-btn.line-btn {
+  background: linear-gradient(135deg, #00B900, #009900);
+  color: white;
+}
+.share-btn.line-btn:hover {
+  box-shadow: 0 4px 15px rgba(0, 185, 0, 0.3);
+}
+
 .hero-badge {
   display: inline-block;
   background: linear-gradient(135deg, rgba(141,181,150,0.2), rgba(220,167,106,0.15));

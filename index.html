@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;700;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;700;900&family=Klee+One:wght@400;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <!-- html2canvas for capturing DOM as image -->
@@ -236,35 +236,40 @@
       <button class="modal-close" id="shareClose" aria-label="關閉">✕</button>
       <div class="modal-header">
         <h3 style="margin-bottom:12px;">🎉 恭喜完成今日打卡！</h3>
-        <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:16px;">
-          長按圖片可儲存，或點擊下方按鈕分享你的運動紀錄。
+        <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:16px;" id="shareInstructions">
+          點擊下方按鈕，製作專屬的運動紀念卡片！
         </p>
       </div>
 
-      <!-- 這個區域會被 html2canvas 截圖 -->
-      <div class="share-card-container" id="shareCardWrap">
-        <div class="share-card" id="shareCardBox">
-          <div class="share-card-header">
-            <div class="share-card-avatar" id="shareAvatar"></div>
-            <div class="share-card-info">
-              <h4 id="shareName">Name</h4>
-              <span id="shareDate">2026-03-12</span>
+      <!-- 這個區域會被 html2canvas 截圖，外觀像信封/明信片 -->
+      <div class="envelope-card-container" id="shareCardWrap">
+        <div class="envelope-card" id="shareCardBox">
+          <div class="envelope-stamp"></div>
+          <div class="envelope-content">
+            <h4 class="envelope-greeting">今天你很棒！</h4>
+            <div class="envelope-message">
+              <span id="shareName">Name</span> 運動了：<br/>
+              <span id="shareDesc"></span>
             </div>
-            <div class="share-card-badge">運動打卡日曆</div>
-          </div>
-          <p class="share-card-desc" id="shareDesc"></p>
-          <img class="share-card-img hidden" id="shareImg" alt="打卡照片" crossorigin="anonymous" />
-          <div class="share-card-footer">
-            <span class="share-brand">Challenge 150</span>
-            <span class="share-slogan">Keep Going! 💪</span>
+            <img class="envelope-img hidden" id="shareImg" alt="打卡照片" crossorigin="anonymous" />
+            <div class="envelope-footer">
+              <span id="shareDate">2026-03-12</span>
+              <span>運動打卡日曆</span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- 產生的預覽圖 (在手機上讓使用者可以長按) -->
-      <img id="sharePreviewImg" alt="預覽分享圖" style="width: 100%; border-radius: var(--radius-sm); display: none; margin-bottom: 20px;" />
+      <img id="sharePreviewImg" alt="預覽分享圖" class="share-preview-img" style="display: none;" />
 
-      <div class="share-actions">
+      <!-- 生成前的按鈕 -->
+      <button class="btn-primary" id="btnGenerateCard" style="width: 100%; margin-top: 10px;">
+        ✨ 產生專屬卡片
+      </button>
+
+      <!-- 生成後的分享按鈕 -->
+      <div class="share-actions hidden" id="shareActionsGroup">
         <button class="btn-primary share-btn db-dl" id="btnDownloadImage">
           ⬇️ 下載圖片
         </button>

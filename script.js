@@ -459,14 +459,15 @@ function compressImage(base64, maxSize) {
    ===================================================================== */
 let currentShareImage = null; // Store base64
 
-async function showShareModal(data) {
+function showShareModal(data) {
   const modal = document.getElementById('shareOutModal');
   const cardWrap = document.getElementById('shareCardWrap');
   const previewImg = document.getElementById('sharePreviewImg');
+  const generateBtn = document.getElementById('btnGenerateCard');
+  const actionGroup = document.getElementById('shareActionsGroup');
+  const instructions = document.getElementById('shareInstructions');
   
   // 1. Populate data
-  document.getElementById('shareAvatar').textContent = data.name.charAt(0).toUpperCase();
-  document.getElementById('shareAvatar').style.background = nameToColor(data.name);
   document.getElementById('shareName').textContent = data.name;
   document.getElementById('shareDate').textContent = data.date;
   document.getElementById('shareDesc').textContent = data.desc || '完成了今日的運動打卡！';
@@ -480,44 +481,72 @@ async function showShareModal(data) {
     imgEl.classList.add('hidden');
   }
 
-  // 2. Show Modal (but keep canvas target visible to render)
+  // 2. Reset UI state for two-step generation
   modal.classList.add('open');
   cardWrap.style.display = 'block';
+  generateBtn.style.display = 'block';
+  instructions.style.display = 'block';
   previewImg.style.display = 'none';
+  actionGroup.classList.add('hidden');
   currentShareImage = null;
-
-  // 3. Render Canvas
-  try {
-    const canvas = await html2canvas(document.getElementById('shareCardBox'), {
-      scale: 2, // High resolution
-      useCORS: true,
-      backgroundColor: null // Transparent so border-radius works
-    });
-    
-    currentShareImage = canvas.toDataURL('image/png');
-    previewImg.src = currentShareImage;
-    
-    // Hide original DOM card, show the flat image so users can long-press to save on mobile
-    cardWrap.style.display = 'none';
-    previewImg.style.display = 'block';
-  } catch (err) {
-    console.error('截圖失敗:', err);
-  }
 }
 
 function initShareModal() {
   const modal = document.getElementById('shareOutModal');
-  document.getElementById('shareClose').addEventListener('click', () => {
+  
+  // 關閉按鈕與背景點擊
+  const close = () => {
     modal.classList.remove('open');
-    loadData(); // Reload the feed behind only after the user is done sharing
-  });
+    loadData(); // Reload the feed only after sharing is done/canceled
+  };
+  document.getElementById('shareClose').addEventListener('click', close);
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.remove('open');
-      loadData();
+    if (e.target === modal) close();
+  });
+
+  // 1. 產生卡片按鈕 (產生截圖並切換 UI)
+  document.getElementById('btnGenerateCard').addEventListener('click', async () => {
+    const cardWrap = document.getElementById('shareCardWrap');
+    const previewImg = document.getElementById('sharePreviewImg');
+    const generateBtn = document.getElementById('btnGenerateCard');
+    const actionGroup = document.getElementById('shareActionsGroup');
+    const instructions = document.getElementById('shareInstructions');
+    const cardBox = document.getElementById('shareCardBox');
+    const originalBtnText = generateBtn.textContent;
+
+    try {
+      generateBtn.textContent = '⏳ 製作中...';
+      generateBtn.disabled = true;
+
+      // 短暫延遲讓瀏覽器重繪字體或圖片 (確保 Klee One 載入)
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(cardBox, {
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: null
+      });
+      
+      currentShareImage = canvas.toDataURL('image/png');
+      previewImg.src = currentShareImage;
+      
+      // 切換 UI: 隱藏 HTML、產生按鈕、提示詞，顯示預覽圖與分享按鈕
+      cardWrap.style.display = 'none';
+      generateBtn.style.display = 'none';
+      instructions.style.display = 'none';
+      previewImg.style.display = 'block';
+      actionGroup.classList.remove('hidden');
+
+    } catch (err) {
+      console.error('截圖失敗:', err);
+      alert('圖片產生失敗，請稍後再試。');
+    } finally {
+      generateBtn.textContent = originalBtnText;
+      generateBtn.disabled = false;
     }
   });
 
+  // 2. 下載按鈕
   document.getElementById('btnDownloadImage').addEventListener('click', () => {
     if (!currentShareImage) return;
     const a = document.createElement('a');
@@ -526,10 +555,11 @@ function initShareModal() {
     a.click();
   });
 
+  // 3. Line 分享按鈕
   document.getElementById('btnShareLine').addEventListener('click', async () => {
     if (!currentShareImage) return;
     
-    // Web Share API fallback check
+    // Web Share API support check
     if (navigator.share) {
       try {
         const res = await fetch(currentShareImage);
@@ -538,7 +568,7 @@ function initShareModal() {
         
         await navigator.share({
           title: '運動打卡完成！',
-          text: '我又完成了一次運動打卡，一起來運動吧！💪',
+          text: '今天我也很棒地完成運動了！💪',
           files: [file]
         });
         return;
@@ -547,8 +577,8 @@ function initShareModal() {
       }
     }
     
-    // Line URL Scheme Fallback if Web Share fails or is unsupported
-    const text = encodeURIComponent('我又完成了一次運動打卡，一起來運動吧！💪\nhttps://legstrong77-maker.github.io/fitness-tracker/');
+    // Line URL Scheme Fallback (圖片無法直接傳遞，僅傳字)
+    const text = encodeURIComponent('今天我也很棒地完成運動了！💪\nhttps://legstrong77-maker.github.io/fitness-tracker/');
     window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
   });
 }
