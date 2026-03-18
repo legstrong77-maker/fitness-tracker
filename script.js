@@ -485,6 +485,8 @@ function showShareModal(data) {
   modal.classList.add('open');
   cardWrap.style.display = 'block';
   generateBtn.style.display = 'block';
+  generateBtn.textContent = '✨ 產生專屬卡片';
+  generateBtn.disabled = false;
   instructions.style.display = 'block';
   previewImg.style.display = 'none';
   actionGroup.classList.add('hidden');
@@ -512,25 +514,32 @@ function initShareModal() {
     const actionGroup = document.getElementById('shareActionsGroup');
     const instructions = document.getElementById('shareInstructions');
     const cardBox = document.getElementById('shareCardBox');
-    const originalBtnText = generateBtn.textContent;
 
     try {
       generateBtn.textContent = '⏳ 製作中...';
       generateBtn.disabled = true;
 
-      // 短暫延遲讓瀏覽器重繪字體或圖片 (確保 Klee One 載入)
-      await new Promise(r => setTimeout(r, 300));
+      // 短暫延遲讓瀏覽器重繪字體或圖片
+      await new Promise(r => setTimeout(r, 400));
 
-      const canvas = await html2canvas(cardBox, {
-        scale: 2, 
+      // 使用 Promise.race 防止 html2canvas 永久卡死 (最多等待 8 秒)
+      const canvasPromise = html2canvas(cardBox, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1, // 根據設備調整解析度，減輕手機負擔
         useCORS: true,
+        allowTaint: true, // 增加跨域容錯
         backgroundColor: null
       });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('圖片產生逾時，請檢查網路或稍後重試。')), 8000)
+      );
+
+      const canvas = await Promise.race([canvasPromise, timeoutPromise]);
       
       currentShareImage = canvas.toDataURL('image/png');
       previewImg.src = currentShareImage;
       
-      // 切換 UI: 隱藏 HTML、產生按鈕、提示詞，顯示預覽圖與分享按鈕
+      // 切換 UI
       cardWrap.style.display = 'none';
       generateBtn.style.display = 'none';
       instructions.style.display = 'none';
@@ -539,9 +548,9 @@ function initShareModal() {
 
     } catch (err) {
       console.error('截圖失敗:', err);
-      alert('圖片產生失敗，請稍後再試。');
-    } finally {
-      generateBtn.textContent = originalBtnText;
+      alert('產生失敗：' + err.message);
+      // 還原按鈕狀態
+      generateBtn.textContent = '✨ 產生專屬卡片';
       generateBtn.disabled = false;
     }
   });
