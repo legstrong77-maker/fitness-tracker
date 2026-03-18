@@ -1,5 +1,5 @@
 // Service Worker — 基本離線快取
-const CACHE_NAME = 'fitness-tracker-v18';
+const CACHE_NAME = 'fitness-tracker-v19';
 self.addEventListener('install', function(e) {
   self.skipWaiting();
 });

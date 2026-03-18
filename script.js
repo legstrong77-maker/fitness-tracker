@@ -884,11 +884,21 @@ function renderLeaderboard() {
       <span class="rank-unit">天</span>
     `;
     
-    // 點擊顯示當月統計 (出現在滑鼠點擊位置)
+    // 點擊或滑過顯示當月統計 (出現在名字旁邊)
     li.style.cursor = 'pointer';
-    li.title = '點擊查看當月統計';
+    li.style.position = 'relative'; // 讓內部的 popover 有絕對定位基準
+    
+    // 桌機 hover / 手機點擊 展開
+    li.addEventListener('mouseenter', () => {
+      openUserStatsModal(item.name, ym, item.count, li);
+    });
     li.addEventListener('click', () => {
       openUserStatsModal(item.name, ym, item.count, li);
+    });
+    
+    // 移開關閉
+    li.addEventListener('mouseleave', () => {
+      closeUserStatsModal();
     });
 
     list.appendChild(li);
@@ -1365,11 +1375,17 @@ function initUserStatsModal() {
   const modal = document.getElementById('userStatsModal');
   const closeBtn = document.getElementById('userStatsClose');
 
-  const close = () => modal.classList.remove('open');
-  closeBtn.addEventListener('click', close);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) close();
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // 防止觸發 li 的點擊事件
+    closeUserStatsModal();
   });
+}
+
+function closeUserStatsModal() {
+  const modal = document.getElementById('userStatsModal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
 }
 
 function openUserStatsModal(name, ym, totalDays, targetEl) {
@@ -1460,48 +1476,15 @@ function openUserStatsModal(name, ym, totalDays, targetEl) {
 
   commentEl.innerHTML = comment;
   
-  // 顯示 Modal 以便取得寬高計算位置
+  // 將 Popover HTML 元素搬移到被滑過的/點擊的項目內，作為子元素
+  if (modal.parentNode !== targetEl) {
+    targetEl.appendChild(modal);
+  }
+  
+  // 清除之前殘留的絕對坐標內聯樣式
+  modal.style.left = '';
+  modal.style.top = '';
+  
+  // 顯示 Modal (座標由 CSS 的 right/top 控制)
   modal.classList.add('open');
-  
-  // 計算絕對座標：因為是 position: absolute，必須加上頁面捲動高度 (Scroll)
-  const rect = modal.getBoundingClientRect();
-  const targetRect = targetEl.getBoundingClientRect();
-  
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-  
-  // 預設位置：排行榜項目的正左側
-  let top = targetRect.top + scrollTop;
-  let left = targetRect.left + scrollLeft - rect.width - 20;
-  
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  
-  // 碰撞偵測 - 左側空間不夠時 (例如手機版面)
-  if (targetRect.left - rect.width - 20 < 10) {
-    // 改為置於點擊物件的正下方
-    top = targetRect.bottom + scrollTop + 15;
-    left = targetRect.left + scrollLeft + (targetRect.width / 2) - (rect.width / 2);
-    
-    // 確認有沒有超過左右螢幕邊界
-    if (left - scrollLeft < 10) {
-      left = scrollLeft + 10;
-    } else if ((left - scrollLeft) + rect.width > viewportWidth - 10) {
-      left = scrollLeft + viewportWidth - rect.width - 10;
-    }
-  }
-  
-  // 碰撞偵測 - 如果視窗下方被切掉
-  if ((top - scrollTop) + rect.height > viewportHeight - 10) {
-    // 改置於點擊物件的正上方
-    top = targetRect.top + scrollTop - rect.height - 15;
-    
-    // 如果連上方都放不下，就垂直置中
-    if (top - scrollTop < 10) {
-      top = scrollTop + (viewportHeight / 2) - (rect.height / 2);
-    }
-  }
-  
-  modal.style.left = `${left}px`;
-  modal.style.top = `${top}px`;
 }
