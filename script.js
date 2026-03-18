@@ -849,6 +849,14 @@ document.getElementById('statsMonthSelect').addEventListener('change', () => {
    ===================================================================== */
 function renderLeaderboard() {
   const list = document.getElementById('leaderboardList');
+  
+  // 救援 Modal，避免被 innerHTML = '' 刪除
+  const modal = document.getElementById('userStatsModal');
+  if (modal && modal.parentNode !== document.body) {
+    document.body.appendChild(modal);
+    modal.classList.remove('open');
+  }
+
   list.innerHTML = '';
 
   const ym = document.getElementById('leaderboardMonthSelect').value;
