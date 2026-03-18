@@ -884,11 +884,11 @@ function renderLeaderboard() {
       <span class="rank-unit">天</span>
     `;
     
-    // 點擊顯示當月統計
+    // 點擊顯示當月統計 (出現在滑鼠點擊位置)
     li.style.cursor = 'pointer';
     li.title = '點擊查看當月統計';
-    li.addEventListener('click', () => {
-      openUserStatsModal(item.name, ym, item.count);
+    li.addEventListener('click', (e) => {
+      openUserStatsModal(item.name, ym, item.count, e);
     });
 
     list.appendChild(li);
@@ -1372,7 +1372,7 @@ function initUserStatsModal() {
   });
 }
 
-function openUserStatsModal(name, ym, totalDays) {
+function openUserStatsModal(name, ym, totalDays, event) {
   const modal = document.getElementById('userStatsModal');
   const title = document.getElementById('userStatsTitle');
   const totalDaysEl = document.getElementById('userStatsTotalDays');
@@ -1459,5 +1459,27 @@ function openUserStatsModal(name, ym, totalDays) {
   }
 
   commentEl.innerHTML = comment;
+  
+  // 顯示 Modal 以便取得寬高
   modal.classList.add('open');
+  
+  // 計算絕對座標：出現在滑鼠點擊處的右下方
+  const innerModal = modal.querySelector('.modal');
+  const rect = innerModal.getBoundingClientRect();
+  
+  // 預設位置：滑鼠右下方 15px
+  let top = event.clientY + 15;
+  let left = event.clientX + 15;
+  
+  // 螢幕邊界碰撞偵測 (避免超出右側或下方)
+  if (left + rect.width > window.innerWidth) {
+    left = window.innerWidth - rect.width - 15;
+  }
+  if (top + rect.height > window.innerHeight) {
+    top = event.clientY - rect.height - 15;
+  }
+  
+  // 確保不會變成負數被切掉
+  innerModal.style.left = `${Math.max(10, left)}px`;
+  innerModal.style.top = `${Math.max(10, top)}px`;
 }
