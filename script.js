@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeCall(renderCalendar);
   safeCall(initModal);
   safeCall(initLightbox);
+  safeCall(initShareModal); // Added initShareModal
   safeCall(initConfig);
   safeCall(initThemeToggle);
   safeCall(initRandomExercise);
@@ -413,8 +414,13 @@ async function submitCheckin() {
       result.style.color = 'var(--accent-secondary)';
       setTimeout(() => {
         closeModal();
-        loadData();
-      }, 1200);
+        showShareModal({
+          name: payload.name,
+          date: payload.date,
+          desc: payload.description,
+          photo: payload.photo
+        });
+      }, 1000);
     } else {
       throw new Error(data.message || '伺服器回傳錯誤');
     }
@@ -445,6 +451,105 @@ function compressImage(base64, maxSize) {
       resolve(canvas.toDataURL('image/jpeg', 0.75));
     };
     img.src = base64;
+  });
+}
+
+/* =====================================================================
+   Share Out Modal 
+   ===================================================================== */
+let currentShareImage = null; // Store base64
+
+async function showShareModal(data) {
+  const modal = document.getElementById('shareOutModal');
+  const cardWrap = document.getElementById('shareCardWrap');
+  const previewImg = document.getElementById('sharePreviewImg');
+  
+  // 1. Populate data
+  document.getElementById('shareAvatar').textContent = data.name.charAt(0).toUpperCase();
+  document.getElementById('shareAvatar').style.background = nameToColor(data.name);
+  document.getElementById('shareName').textContent = data.name;
+  document.getElementById('shareDate').textContent = data.date;
+  document.getElementById('shareDesc').textContent = data.desc || '完成了今日的運動打卡！';
+  
+  const imgEl = document.getElementById('shareImg');
+  if (data.photo) {
+    imgEl.src = data.photo;
+    imgEl.classList.remove('hidden');
+  } else {
+    imgEl.src = '';
+    imgEl.classList.add('hidden');
+  }
+
+  // 2. Show Modal (but keep canvas target visible to render)
+  modal.classList.add('open');
+  cardWrap.style.display = 'block';
+  previewImg.style.display = 'none';
+  currentShareImage = null;
+
+  // 3. Render Canvas
+  try {
+    const canvas = await html2canvas(document.getElementById('shareCardBox'), {
+      scale: 2, // High resolution
+      useCORS: true,
+      backgroundColor: null // Transparent so border-radius works
+    });
+    
+    currentShareImage = canvas.toDataURL('image/png');
+    previewImg.src = currentShareImage;
+    
+    // Hide original DOM card, show the flat image so users can long-press to save on mobile
+    cardWrap.style.display = 'none';
+    previewImg.style.display = 'block';
+  } catch (err) {
+    console.error('截圖失敗:', err);
+  }
+}
+
+function initShareModal() {
+  const modal = document.getElementById('shareOutModal');
+  document.getElementById('shareClose').addEventListener('click', () => {
+    modal.classList.remove('open');
+    loadData(); // Reload the feed behind only after the user is done sharing
+  });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('open');
+      loadData();
+    }
+  });
+
+  document.getElementById('btnDownloadImage').addEventListener('click', () => {
+    if (!currentShareImage) return;
+    const a = document.createElement('a');
+    a.href = currentShareImage;
+    a.download = `fitness_checkin_${Date.now()}.png`;
+    a.click();
+  });
+
+  document.getElementById('btnShareLine').addEventListener('click', async () => {
+    if (!currentShareImage) return;
+    
+    // Web Share API fallback check
+    if (navigator.share) {
+      try {
+        const res = await fetch(currentShareImage);
+        const blob = await res.blob();
+        const file = new File([blob], 'checkin.png', { type: 'image/png' });
+        
+        await navigator.share({
+          title: '運動打卡完成！',
+          text: '我又完成了一次運動打卡，一起來運動吧！💪',
+          files: [file]
+        });
+        return;
+      } catch (err) {
+        console.warn('Native share canceled or failed:', err);
+      }
+    }
+    
+    // Line URL Scheme Fallback if Web Share fails or is unsupported
+    const text = encodeURIComponent('我又完成了一次運動打卡，一起來運動吧！💪\nhttps://legstrong77-maker.github.io/fitness-tracker/');
+    window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
   });
 }
 
