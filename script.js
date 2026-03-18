@@ -474,10 +474,10 @@ function showShareModal(data) {
   
   const imgEl = document.getElementById('shareImg');
   if (data.photo) {
-    imgEl.style.backgroundImage = `url("${data.photo}")`;
+    imgEl.src = data.photo;
     imgEl.classList.remove('hidden');
   } else {
-    imgEl.style.backgroundImage = 'none';
+    imgEl.src = '';
     imgEl.classList.add('hidden');
   }
 
@@ -520,9 +520,15 @@ function initShareModal() {
       generateBtn.disabled = true;
 
       // 短暫延遲讓瀏覽器重繪字體或圖片
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 600));
 
-      // 使用 Promise.race 防止意外卡死 (最多等待 10 秒)
+      // 針對 iOS Safari 的修正：第一次預先渲染 (丟棄結果)
+      // 強迫 WebKit 引擎提早把圖片載入並成功繪製到 background cache 中
+      try {
+        await window.htmlToImage.toPng(cardBox, { pixelRatio: 1, style: { margin: '0' } });
+      } catch (e) { /* ignore fallback */ }
+
+      // 第二次正式渲染高畫質
       const canvasPromise = window.htmlToImage.toPng(cardBox, {
         pixelRatio: 3, // 強制使用 3 倍高畫質渲染 (解決畫質差的問題)
         style: { margin: '0' }, // 確保截圖時 margin auto 不影響定位
