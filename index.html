@@ -279,29 +279,27 @@
     </div>
   </div>
 
-  <!-- ★★★ 使用者當月統計 Modal 區塊 ★★★ -->
-  <div class="overlay" id="userStatsModal">
-    <div class="modal">
-      <button class="modal-close" id="userStatsClose" aria-label="關閉統計">&times;</button>
-      <h2 id="userStatsTitle">當月運動紀錄</h2>
-      
-      <div id="userStatsContent" style="margin-top: 15px;">
-        <!-- 總天數 -->
-        <div class="stats-summary-box">
-          <p>本月累計運動</p>
-          <div><strong id="userStatsTotalDays" style="font-size: 2.2rem; color: var(--accent);">0</strong> 天</div>
-        </div>
+  <!-- ★★★ 使用者當月統計 Modal 區塊 (Popover) ★★★ -->
+  <div class="user-stats-popover" id="userStatsModal">
+    <button class="modal-close" id="userStatsClose" aria-label="關閉統計">&times;</button>
+    <h2 id="userStatsTitle">當月運動紀錄</h2>
+    
+    <div id="userStatsContent" style="margin-top: 15px;">
+      <!-- 總天數 -->
+      <div class="stats-summary-box">
+        <p>本月累計運動</p>
+        <div><strong id="userStatsTotalDays" style="font-size: 2.2rem; color: var(--accent);">0</strong> 天</div>
+      </div>
 
-        <!-- 運動分類 -->
-        <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 2px solid var(--border); padding-bottom: 8px;">運動項目分佈</h3>
-        <div class="stats-list" id="userStatsTypesList" style="margin-top: 15px;">
-          <!-- 項目動態產生 -->
-        </div>
+      <!-- 運動分類 -->
+      <h3 style="margin-top: 20px; font-size: 1.1rem; border-bottom: 2px solid var(--border); padding-bottom: 8px;">運動項目分佈</h3>
+      <div class="stats-list" id="userStatsTypesList" style="margin-top: 15px;">
+        <!-- 項目動態產生 -->
+      </div>
 
-        <!-- 總結評語 -->
-        <div class="stats-comment" id="userStatsComment" style="margin-top: 24px;">
-          <!-- 評語動態產生 -->
-        </div>
+      <!-- 總結評語 -->
+      <div class="stats-comment" id="userStatsComment" style="margin-top: 24px;">
+        <!-- 評語動態產生 -->
       </div>
     </div>
   </div>

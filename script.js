@@ -1463,35 +1463,45 @@ function openUserStatsModal(name, ym, totalDays, targetEl) {
   // 顯示 Modal 以便取得寬高計算位置
   modal.classList.add('open');
   
-  // 計算絕對座標：定位在被點擊的排行榜項目的左側或上方
-  const innerModal = modal.querySelector('.modal');
-  const rect = innerModal.getBoundingClientRect();
+  // 計算絕對座標：因為是 position: absolute，必須加上頁面捲動高度 (Scroll)
+  const rect = modal.getBoundingClientRect();
   const targetRect = targetEl.getBoundingClientRect();
   
-  // 預設位置：排行榜項目的左側
-  let top = targetRect.top;
-  let left = targetRect.left - rect.width - 20;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
   
-  // 碰撞偵測
-  if (left < 10) {
-    // 如果左邊空間不夠，改放右側（但通常排行榜在最右側）或正上方
-    left = targetRect.right + 20;
+  // 預設位置：排行榜項目的正左側
+  let top = targetRect.top + scrollTop;
+  let left = targetRect.left + scrollLeft - rect.width - 20;
+  
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // 碰撞偵測 - 左側空間不夠時 (例如手機版面)
+  if (targetRect.left - rect.width - 20 < 10) {
+    // 改為置於點擊物件的正下方
+    top = targetRect.bottom + scrollTop + 15;
+    left = targetRect.left + scrollLeft + (targetRect.width / 2) - (rect.width / 2);
     
-    // 如果右邊也不夠，放上方
-    if (left + rect.width > window.innerWidth) {
-      left = window.innerWidth / 2 - rect.width / 2;
-      top = targetRect.top - rect.height - 15;
+    // 確認有沒有超過左右螢幕邊界
+    if (left - scrollLeft < 10) {
+      left = scrollLeft + 10;
+    } else if ((left - scrollLeft) + rect.width > viewportWidth - 10) {
+      left = scrollLeft + viewportWidth - rect.width - 10;
     }
   }
   
-  if (top + rect.height > window.innerHeight) {
-    top = window.innerHeight - rect.height - 15;
+  // 碰撞偵測 - 如果視窗下方被切掉
+  if ((top - scrollTop) + rect.height > viewportHeight - 10) {
+    // 改置於點擊物件的正上方
+    top = targetRect.top + scrollTop - rect.height - 15;
+    
+    // 如果連上方都放不下，就垂直置中
+    if (top - scrollTop < 10) {
+      top = scrollTop + (viewportHeight / 2) - (rect.height / 2);
+    }
   }
-  if (top < 10) top = 10;
   
-  // 強制覆蓋所有 CSS 預設排版
-  innerModal.style.position = 'absolute';
-  innerModal.style.margin = '0';
-  innerModal.style.left = `${left}px`;
-  innerModal.style.top = `${top}px`;
+  modal.style.left = `${left}px`;
+  modal.style.top = `${top}px`;
 }
