@@ -359,28 +359,29 @@ function sendLineNotification(name, date, description, token, targetId) {
   const descText = description ? ` ${description}` : '';
   const textMsg = `${shortDate} ${weekdayStr} 今天第${todayCount}位打卡為 ${name}${descText}。\n連續${consecutiveDays}天運動，${randEncourage}`;
 
-  const payload = {
-    to: targetId,
-    messages: [
-      {
-        type: 'text',
-        text: textMsg
-      }
-    ]
-  };
+  const targetIds = String(targetId).split(',').map(id => id.trim()).filter(id => id);
+  let finalResponse = '';
 
-  const options = {
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token
-    },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
+  for (const tid of targetIds) {
+    const payload = {
+      to: tid,
+      messages: [{ type: 'text', text: textMsg }]
+    };
 
-  const response = UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', options);
-  return response.getContentText(); // 將 LINE 伺服器的錯誤訊息丟回去給前端
+    const options = {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', options);
+    finalResponse += response.getContentText() + '\n';
+  }
+  return finalResponse.trim();
 }
 
 // =====================================================================
@@ -398,9 +399,19 @@ function handleLineWebhook(events) {
 
       // 當使用者在群組說「綁定打卡」，就自動記錄這個 ID
       if (event.message.text === '綁定打卡') {
-        setConfigValue('LINE_TARGET_ID', targetId);
-        
         const configs = getConfigs();
+        const currentTargetsStr = String(configs['LINE_TARGET_ID'] || '').trim();
+        let targets = currentTargetsStr ? currentTargetsStr.split(',').map(id => id.trim()).filter(id => id) : [];
+        
+        let replyMsg = '';
+        if (!targets.includes(targetId)) {
+          targets.push(targetId);
+          setConfigValue('LINE_TARGET_ID', targets.join(','));
+          replyMsg = `✅ 群組綁定成功！此群組已加入推播清單。目前共有 ${targets.length} 個群組接收通知。`;
+        } else {
+          replyMsg = `✅ 此群組之前已經在綁定名單中囉！目前共有 ${targets.length} 個群組接收通知。`;
+        }
+        
         const token = LINE_CHANNEL_ACCESS_TOKEN || configs['LINE_CHANNEL_ACCESS_TOKEN'];
         const replyToken = event.replyToken;
         
@@ -413,7 +424,7 @@ function handleLineWebhook(events) {
             },
             payload: JSON.stringify({
               replyToken: replyToken,
-              messages: [{ type: 'text', text: '✅ 群組綁定成功！之後的打卡紀錄都會推播到這裡。' }]
+              messages: [{ type: 'text', text: replyMsg }]
             }),
             muteHttpExceptions: true
           });
