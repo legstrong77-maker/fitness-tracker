@@ -127,6 +127,7 @@ function addRecord(payload) {
 
   const timestamp = new Date().toISOString();
   sheet.appendRow([timestamp, name, description || '', date, photoUrl]);
+  SpreadsheetApp.flush(); // 強制將剛剛新增的資料寫入試算表，避免稍後讀取時讀不到
 
   // 推播至 LINE
   const configs = getConfigs();
@@ -283,27 +284,30 @@ function sendLineNotification(name, date, description, token, targetId) {
   
   let todayCount = 0;
   const userDates = {}; 
-  const tz = Session.getScriptTimeZone();
+  const tz = 'Asia/Taipei'; // 強制使用台北時區，避免 Google 預設紐約時區導致日期減一天
   
   // 從 i=1 開始跳過標題行
   for (let i = 1; i < data.length; i++) {
     const rName = String(data[i][1]).trim();
-    let rDateRaw = data[i][3];
+    const rDateRaw = data[i][3];
     let rDateStr = '';
     
-    // 轉換為 yyyy-MM-dd 以便比較
-    if (rDateRaw instanceof Date) {
-      rDateStr = Utilities.formatDate(rDateRaw, tz, 'yyyy-MM-dd');
-    } else {
-      rDateStr = String(rDateRaw).trim();
+    if (rDateRaw) {
+      // 終極無敵防呆日期轉換
+      const parsedDate = new Date(rDateRaw);
+      if (!isNaN(parsedDate.getTime())) {
+        rDateStr = Utilities.formatDate(parsedDate, 'Asia/Taipei', 'yyyy-MM-dd');
+      } else {
+        rDateStr = String(rDateRaw).trim().replace(/\//g, '-').substring(0, 10);
+      }
     }
     
-    // 計算今日總共第幾位打卡
+    // 如果日期相同，計入今日打卡人數
     if (rDateStr === date) {
       todayCount++;
     }
     
-    // 記錄這個人的打卡日期
+    // 記錄這個人的打卡日期 (算連續天數用)
     if (rName === name) {
       userDates[rDateStr] = true;
     }
