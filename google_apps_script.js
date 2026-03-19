@@ -429,6 +429,37 @@ function handleLineWebhook(events) {
             muteHttpExceptions: true
           });
         }
+      } else if (event.message.text === '解除綁定') {
+        const configs = getConfigs();
+        const currentTargetsStr = String(configs['LINE_TARGET_ID'] || '').trim();
+        let targets = currentTargetsStr ? currentTargetsStr.split(',').map(id => id.trim()).filter(id => id) : [];
+        
+        let replyMsg = '';
+        if (targets.includes(targetId)) {
+          targets = targets.filter(id => id !== targetId);
+          setConfigValue('LINE_TARGET_ID', targets.join(','));
+          replyMsg = `🚫 已成功解除綁定！這個群組將不再接收打卡推播。目前剩餘 ${targets.length} 個群組接收通知。`;
+        } else {
+          replyMsg = `🚫 這個群組目前沒有綁定推播紀錄喔！`;
+        }
+        
+        const token = LINE_CHANNEL_ACCESS_TOKEN || configs['LINE_CHANNEL_ACCESS_TOKEN'];
+        const replyToken = event.replyToken;
+        
+        if (token && replyToken) {
+          UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
+            method: 'post',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            payload: JSON.stringify({
+              replyToken: replyToken,
+              messages: [{ type: 'text', text: replyMsg }]
+            }),
+            muteHttpExceptions: true
+          });
+        }
       }
     }
   }
