@@ -276,22 +276,84 @@ function jsonResponse(obj) {
 //  傳送 LINE 推播訊息
 // =====================================================================
 function sendLineNotification(name, date, description, token, targetId) {
-  // 將日期格式轉換為簡短格式 (例如: 2024-03-19 -> 3/19)
-  let shortDate = date;
-  if (date && date.includes('-')) {
-    const parts = date.split('-');
-    if (parts.length === 3) {
-      shortDate = `${parseInt(parts[1])}/${parseInt(parts[2])}`; // 去除前導零
+  // 1. 取得統計資料 (第幾位打卡、連續幾天)
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  let todayCount = 0;
+  const userDates = {}; 
+  const tz = Session.getScriptTimeZone();
+  
+  // 從 i=1 開始跳過標題行
+  for (let i = 1; i < data.length; i++) {
+    const rName = String(data[i][1]).trim();
+    let rDateRaw = data[i][3];
+    let rDateStr = '';
+    
+    // 轉換為 yyyy-MM-dd 以便比較
+    if (rDateRaw instanceof Date) {
+      rDateStr = Utilities.formatDate(rDateRaw, tz, 'yyyy-MM-dd');
+    } else {
+      rDateStr = String(rDateRaw).trim();
+    }
+    
+    // 計算今日總共第幾位打卡
+    if (rDateStr === date) {
+      todayCount++;
+    }
+    
+    // 記錄這個人的打卡日期
+    if (rName === name) {
+      userDates[rDateStr] = true;
+    }
+  }
+  
+  // 以防萬一，確保今天的日期有被記錄
+  if (!userDates[date]) {
+    userDates[date] = true;
+  }
+  
+  // 計算連續天數 (由今天往回推算)
+  let consecutiveDays = 0;
+  // 將字串手動轉換成 Date，避免時區問題
+  const parts = date.split('-');
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  const checkDate = new Date(y, m - 1, d);
+  
+  while (true) {
+    const checkStr = Utilities.formatDate(checkDate, tz, 'yyyy-MM-dd');
+    if (userDates[checkStr]) {
+      consecutiveDays++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
     }
   }
 
-  // 組合訊息內容，例如：某某某 3/19 跑步1小時
-  let textMsg = `${name} ${shortDate}`;
-  if (description) {
-    textMsg += ` ${description}`;
-  } else {
-    textMsg += ` 完成了打卡！`;
-  }
+  // 2. 格式化日期與星期 (例如: 3/19 (四))
+  let shortDate = `${m}/${d}`;
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  const weekdayObj = new Date(y, m - 1, d);
+  let weekdayStr = `(${weekdays[weekdayObj.getDay()]})`;
+
+  // 3. 隨機鼓勵小語
+  const encouragements = [
+    "表現很好喔！繼續保持 🔥",
+    "太讚啦！請收下我的膝蓋 🙇‍♂️",
+    "無能人敵！你是今天的運動達人 🏆",
+    "持之以恆就是勝利！💪",
+    "這意志力太驚人了！🚀",
+    "汗水是不會背叛你的！💦"
+  ];
+  const randEncourage = encouragements[Math.floor(Math.random() * encouragements.length)];
+
+  // 4. 組合最終訊息內容
+  // 格式範例：3/19 (四) 今天第4位打卡為 泥鰍 跑步30min。 連續3天運動，表現很好喔
+  const descText = description ? ` ${description}` : '';
+  const textMsg = `${shortDate} ${weekdayStr} 今天第${todayCount}位打卡為 ${name}${descText}。\n連續${consecutiveDays}天運動，${randEncourage}`;
 
   const payload = {
     to: targetId,
