@@ -6,8 +6,7 @@
    ★ 請先完成 Apps Script 設定，並將部署後的 URL 填入
    ===================================================================== */
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxm5Kky6glM8bv338GVUjO4Y-69k6ICX2mYsxVmM4jnauAixbyxhtgisLnF-yC_4UFX1A/exec'; // ← ★ 在此填入您的 GAS Web App 網址
-
+const API_URL = 'https://script.google.com/macros/s/AKfycbzYlSFus1TfhKpqFowLRntGFo4bw8aPFizl6_T_iui0076aypwaHeCHJvQzwNlssFqHDA/exec'
 /* =====================================================================
    全域狀態
    ===================================================================== */
@@ -25,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   viewYear = now.getFullYear();
   viewMonth = now.getMonth();
 
-  const safeCall = (fn) => { try { fn(); } catch(e) { console.error('Init error:', fn.name, e); } };
+  const safeCall = (fn) => { try { fn(); } catch (e) { console.error('Init error:', fn.name, e); } };
 
   safeCall(initAnnouncement);
   safeCall(initRewards);
@@ -410,7 +409,21 @@ async function submitCheckin() {
     const data = await res.json();
 
     if (data.status === 'ok') {
-      result.textContent = '🎉 打卡成功！繼續保持！';
+      // 顯示打卡與 LINE 推播的結果
+      let debugMsg = '';
+      if (data.lineDebug) {
+        if (data.lineDebug === '{}') debugMsg = '\n(LINE 推播成功)';
+        else debugMsg = '\n[LINE 推播回報] ' + data.lineDebug;
+      }
+
+      // 強制把系統回傳的所有資料通通印出
+      alert('【系統後台傳回來的資料】\n' + JSON.stringify(data, null, 2));
+
+      if (data.lineDebug && data.lineDebug !== '{}') {
+        alert('【LINE 出錯啦】\n' + data.lineDebug);
+      }
+
+      result.textContent = '🎉 打卡成功！繼續保持！' + debugMsg;
       result.style.color = 'var(--accent-secondary)';
       setTimeout(() => {
         closeModal();
@@ -420,7 +433,7 @@ async function submitCheckin() {
           desc: payload.description,
           photo: payload.photo
         });
-      }, 1000);
+      }, 1500);
     } else {
       throw new Error(data.message || '伺服器回傳錯誤');
     }
@@ -471,12 +484,12 @@ function showShareModal(data) {
   const generateBtn = document.getElementById('btnGenerateCard');
   const actionGroup = document.getElementById('shareActionsGroup');
   const instructions = document.getElementById('shareInstructions');
-  
+
   // 1. Populate data for preview HTML
   document.getElementById('shareName').textContent = data.name;
   document.getElementById('shareDate').textContent = data.date;
   document.getElementById('shareDesc').textContent = data.desc || '完成了今日的運動打卡！';
-  
+
   const imgEl = document.getElementById('shareImg');
   if (data.photo) {
     imgEl.src = data.photo;
@@ -504,7 +517,7 @@ async function generateShareCardCanvas(data) {
   const w = 1080;
   const hasPhoto = !!data.photo;
   const h = hasPhoto ? 1440 : 660; // 動態高度：無照片則縮短卡片
-  
+
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -525,7 +538,7 @@ async function generateShareCardCanvas(data) {
 
   // Wait for font load if API exists
   if (document.fonts && document.fonts.ready) {
-    try { await document.fonts.ready; } catch(e) {}
+    try { await document.fonts.ready; } catch (e) { }
   }
   const font = '"Klee One", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
 
@@ -590,7 +603,7 @@ async function generateShareCardCanvas(data) {
       sX = 0;
       sY = (img.height - sH) / 2;
     }
-    
+
     // Create clipping mask to ensure photo stays strictly inside the box
     ctx.save();
     ctx.beginPath();
@@ -627,7 +640,7 @@ async function generateShareCardCanvas(data) {
 
 function initShareModal() {
   const modal = document.getElementById('shareOutModal');
-  
+
   // 關閉按鈕與背景點擊
   const close = () => {
     modal.classList.remove('open');
@@ -656,9 +669,9 @@ function initShareModal() {
 
       // 呼叫全新 100% 安全的手動 HTML5 Canvas 引擎繪製卡片
       currentShareImage = await generateShareCardCanvas(currentShareData);
-      
+
       previewImg.src = currentShareImage;
-      
+
       // 切換 UI
       cardWrap.style.display = 'none';
       generateBtn.style.display = 'none';
@@ -687,14 +700,14 @@ function initShareModal() {
   // 3. Line 分享按鈕
   document.getElementById('btnShareLine').addEventListener('click', async () => {
     if (!currentShareImage) return;
-    
+
     // Web Share API support check
     if (navigator.share) {
       try {
         const res = await fetch(currentShareImage);
         const blob = await res.blob();
         const file = new File([blob], 'checkin.png', { type: 'image/png' });
-        
+
         await navigator.share({
           title: '運動打卡完成！',
           text: '今天我也很棒地完成運動了！💪',
@@ -705,7 +718,7 @@ function initShareModal() {
         console.warn('Native share canceled or failed:', err);
       }
     }
-    
+
     // Line URL Scheme Fallback (圖片無法直接傳遞，僅傳字)
     const text = encodeURIComponent('今天我也很棒地完成運動了！💪\nhttps://legstrong77-maker.github.io/fitness-tracker/');
     window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
@@ -849,7 +862,7 @@ document.getElementById('statsMonthSelect').addEventListener('change', () => {
    ===================================================================== */
 function renderLeaderboard() {
   const list = document.getElementById('leaderboardList');
-  
+
   // 救援 Modal，避免被 innerHTML = '' 刪除
   const modal = document.getElementById('userStatsModal');
   if (modal && modal.parentNode !== document.body) {
@@ -891,11 +904,11 @@ function renderLeaderboard() {
       <span class="rank-count">${item.count}</span>
       <span class="rank-unit">天</span>
     `;
-    
+
     // 點擊或滑過顯示當月統計 (出現在名字旁邊)
     li.style.cursor = 'pointer';
     li.style.position = 'relative'; // 讓內部的 popover 有絕對定位基準
-    
+
     // 桌機 hover / 手機點擊 展開
     li.addEventListener('mouseenter', () => {
       openUserStatsModal(item.name, ym, item.count, li);
@@ -903,7 +916,7 @@ function renderLeaderboard() {
     li.addEventListener('click', () => {
       openUserStatsModal(item.name, ym, item.count, li);
     });
-    
+
     // 移開關閉
     li.addEventListener('mouseleave', () => {
       closeUserStatsModal();
@@ -1368,8 +1381,8 @@ function scheduleReminder() {
    ===================================================================== */
 function registerSW() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for(let registration of registrations) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      for (let registration of registrations) {
         registration.unregister();
       }
     });
@@ -1419,7 +1432,7 @@ function openUserStatsModal(name, ym, totalDays, targetEl) {
   userMonthRecs.forEach(rec => {
     let desc = rec.description || '';
     let found = false;
-    
+
     // 優先檢查是否有內建標籤格式 [重訓] 或者是使用者自訂分類字眼
     const match = desc.match(/^\[(.*?)\]/);
     if (match) {
@@ -1483,16 +1496,16 @@ function openUserStatsModal(name, ym, totalDays, targetEl) {
   }
 
   commentEl.innerHTML = comment;
-  
+
   // 將 Popover HTML 元素搬移到被滑過的/點擊的項目內，作為子元素
   if (modal.parentNode !== targetEl) {
     targetEl.appendChild(modal);
   }
-  
+
   // 清除之前殘留的絕對坐標內聯樣式
   modal.style.left = '';
   modal.style.top = '';
-  
+
   // 顯示 Modal (座標由 CSS 的 right/top 控制)
   modal.classList.add('open');
 }

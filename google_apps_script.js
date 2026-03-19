@@ -17,6 +17,12 @@ const SHEET_NAME = '打卡紀錄';
 const CONFIG_SHEET_NAME = '系統設定';
 
 // =====================================================================
+//  LINE Bot 設定 (若不使用請保持引號內空白)
+// =====================================================================
+const LINE_CHANNEL_ACCESS_TOKEN = ''; // ← ★ 填入您的 LINE Channel Access Token
+const LINE_TARGET_ID = ''; // ← ★ 填入推播目標的 Group ID、Room ID 或 User ID
+
+// =====================================================================
 //  處理 GET 請求
 // =====================================================================
 function doGet(e) {
@@ -59,6 +65,11 @@ function doGet(e) {
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
+
+    // 若收到的是 LINE Webhook 傳來的事件，則交由 LINE 專用函式處理
+    if (payload.events) {
+      return handleLineWebhook(payload.events);
+    }
 
     if (payload.action === 'addRecord') {
       const result = addRecord(payload);
@@ -117,7 +128,24 @@ function addRecord(payload) {
   const timestamp = new Date().toISOString();
   sheet.appendRow([timestamp, name, description || '', date, photoUrl]);
 
-  return { status: 'ok', message: '打卡成功！' };
+  // 推播至 LINE
+  const configs = getConfigs();
+  const token = LINE_CHANNEL_ACCESS_TOKEN || configs['LINE_CHANNEL_ACCESS_TOKEN'];
+  const targetId = LINE_TARGET_ID || configs['LINE_TARGET_ID'];
+  let lineDebug = '等待 LINE 推播結果';
+
+  if (token && targetId) {
+    try {
+      lineDebug = sendLineNotification(name, date, description, token, targetId);
+    } catch (e) {
+      console.log('LINE Push Error: ' + e.toString());
+      lineDebug = e.toString();
+    }
+  } else {
+    lineDebug = '未設定 Token 或 群組 ID';
+  }
+
+  return { status: 'ok', message: '打卡成功！', lineDebug: lineDebug };
 }
 
 // =====================================================================
@@ -201,7 +229,11 @@ function getConfigs() {
   const configs = {};
   for (let i = 0; i < data.length; i++) {
     const [key, value] = data[i];
-    if (key) configs[key] = value;
+    if (key && typeof key === 'string') {
+      const safeKey = key.trim();
+      const safeValue = (typeof value === 'string') ? value.trim() : value;
+      configs[safeKey] = safeValue;
+    }
   }
   return configs;
 }
@@ -238,5 +270,91 @@ function jsonResponse(obj) {
   const output = ContentService.createTextOutput(JSON.stringify(obj));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+// =====================================================================
+//  傳送 LINE 推播訊息
+// =====================================================================
+function sendLineNotification(name, date, description, token, targetId) {
+  // 將日期格式轉換為簡短格式 (例如: 2024-03-19 -> 3/19)
+  let shortDate = date;
+  if (date && date.includes('-')) {
+    const parts = date.split('-');
+    if (parts.length === 3) {
+      shortDate = `${parseInt(parts[1])}/${parseInt(parts[2])}`; // 去除前導零
+    }
+  }
+
+  // 組合訊息內容，例如：某某某 3/19 跑步1小時
+  let textMsg = `${name} ${shortDate}`;
+  if (description) {
+    textMsg += ` ${description}`;
+  } else {
+    textMsg += ` 完成了打卡！`;
+  }
+
+  const payload = {
+    to: targetId,
+    messages: [
+      {
+        type: 'text',
+        text: textMsg
+      }
+    ]
+  };
+
+  const options = {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', options);
+  return response.getContentText(); // 將 LINE 伺服器的錯誤訊息丟回去給前端
+}
+
+// =====================================================================
+//  處理 LINE Webhook (自動綁定群組 ID)
+// =====================================================================
+function handleLineWebhook(events) {
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    if (event.type === 'message' && event.message.type === 'text') {
+      const source = event.source;
+      let targetId = '';
+      if (source.type === 'group') targetId = source.groupId;
+      else if (source.type === 'room') targetId = source.roomId;
+      else targetId = source.userId;
+
+      // 當使用者在群組說「綁定打卡」，就自動記錄這個 ID
+      if (event.message.text === '綁定打卡') {
+        setConfigValue('LINE_TARGET_ID', targetId);
+        
+        const configs = getConfigs();
+        const token = LINE_CHANNEL_ACCESS_TOKEN || configs['LINE_CHANNEL_ACCESS_TOKEN'];
+        const replyToken = event.replyToken;
+        
+        if (token && replyToken) {
+          UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
+            method: 'post',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            payload: JSON.stringify({
+              replyToken: replyToken,
+              messages: [{ type: 'text', text: '✅ 群組綁定成功！之後的打卡紀錄都會推播到這裡。' }]
+            }),
+            muteHttpExceptions: true
+          });
+        }
+      }
+    }
+  }
+  return ContentService.createTextOutput('OK');
 }
 
