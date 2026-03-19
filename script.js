@@ -416,11 +416,8 @@ async function submitCheckin() {
         else debugMsg = '\n[LINE 推播回報] ' + data.lineDebug;
       }
 
-      // 強制把系統回傳的所有資料通通印出
-      alert('【系統後台傳回來的資料】\n' + JSON.stringify(data, null, 2));
-
-      if (data.lineDebug && data.lineDebug !== '{}') {
-        alert('【LINE 出錯啦】\n' + data.lineDebug);
+      if (data.lineDebug && data.lineDebug !== '{}' && !data.lineDebug.includes('sentMessages')) {
+        console.error('【LINE 出錯啦】', data.lineDebug);
       }
 
       result.textContent = '🎉 打卡成功！繼續保持！' + debugMsg;
