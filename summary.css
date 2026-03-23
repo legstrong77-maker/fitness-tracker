@@ -406,7 +406,4 @@ body.pdf-export-mode .summary-header {
   transform: none !important;
 }
 
-/* 確保列印文字不被截斷 */
-.pdf-export-mode .timeline-item {
-  page-break-inside: avoid;
-}
+

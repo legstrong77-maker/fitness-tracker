@@ -148,6 +148,9 @@ async function downloadAndUploadPDF() {
 
   // 解決 PDF 截斷問題 (捲動到頂部重設 viewport 高度)
   window.scrollTo(0, 0);
+  const elementWidth = element.scrollWidth;
+  const elementHeight = element.scrollHeight;
+
   const opt = {
     margin:       [10, 10, 10, 10],
     filename:     filename,
@@ -157,10 +160,13 @@ async function downloadAndUploadPDF() {
       useCORS: true, 
       backgroundColor: '#0f172a', 
       logging: false,
-      scrollY: 0
+      scrollY: 0,
+      width: elementWidth,
+      height: elementHeight,
+      windowWidth: document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight
     },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
   try {
