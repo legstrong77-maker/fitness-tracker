@@ -100,26 +100,8 @@ async function generateReport() {
       });
     }
 
-    // 2. Request Gemini Analysis
-    const payload = {
-      action: 'generateGeminiSummary',
-      name: name,
-      month: month,
-      records: checkins.map(r => ({ date: r.date, description: r.description }))
-    };
-
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-
-    if (data.status === 'ok') {
-      document.getElementById('aiAdviceContent').innerHTML = parseMarkdown(data.advice);
-      reportSection.classList.remove('hidden');
-    } else {
-      alert('產生回顧失敗：' + data.message);
-    }
+    // Show the report section immediately
+    reportSection.classList.remove('hidden');
 
   } catch (err) {
     alert('發生錯誤：' + err.message);
