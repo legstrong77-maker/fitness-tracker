@@ -153,9 +153,13 @@ async function downloadAndUploadPDF() {
       scale: 2, 
       useCORS: true, 
       backgroundColor: '#0f172a', 
-      logging: false 
+      logging: false,
+      scrollY: 0,
+      windowWidth: document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight
     },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: 'avoid-all', before: '.timeline-item' }
   };
 
   try {

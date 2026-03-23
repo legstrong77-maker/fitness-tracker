@@ -381,6 +381,15 @@ body::after {
 }
 
 /* 解決 PDF 匯出時的渲染問題 (移除毛玻璃以免 html2canvas 變灰塊) */
+body.pdf-export-mode {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+body.pdf-export-mode .summary-header {
+  position: static !important; /* html2pdf breaks on sticky/absolute parents on multipage */
+}
+
 .pdf-export-mode * {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
