@@ -139,8 +139,11 @@ async function downloadAndUploadPDF() {
   const month = document.getElementById('monthSelect').value;
   const filename = `${name}_${month}_轉檔回顧.pdf`;
   
-  // 暫時加上匯出模式，關閉毛玻璃以免渲染成灰塊
+  // 暫時加上匯出模式，關閉毛玻璃以免渲染成灰塊，並給予實體深色底
   document.body.classList.add('pdf-export-mode');
+  element.style.background = '#0f172a';
+  element.style.padding = '30px';
+  element.style.borderRadius = '16px';
 
   const opt = {
     margin:       [10, 10, 10, 10],
@@ -156,13 +159,22 @@ async function downloadAndUploadPDF() {
   };
 
   try {
-    // 預載圖片以防空白
+    // 預載圖片以防空白，並且使用 CORS Proxy 繞過 Google Drive 跨域限制
     const imgs = element.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img => {
+      const originalSrc = img.src;
+      // 替換為 corsproxy 解決 HTML2Canvas 讀不到 drive 圖片的跨域錯誤
+      if (originalSrc.includes('drive.google.com') && !originalSrc.includes('corsproxy.io')) {
+        img.src = 'https://corsproxy.io/?' + encodeURIComponent(originalSrc);
+      }
+
       if (img.complete) return Promise.resolve();
       return new Promise((resolve) => {
         img.onload = resolve;
-        img.onerror = resolve;
+        img.onerror = () => {
+          img.src = originalSrc; // 失敗時退回原位
+          resolve();
+        };
       });
     }));
 
@@ -177,7 +189,7 @@ async function downloadAndUploadPDF() {
       pdfBase64: pdfBase64
     };
     
-    // 完全不跳出警告、不等待完成
+    // 完全不跳出警告、不等待完成 (默默儲存)
     fetch(API_URL, {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -191,6 +203,9 @@ async function downloadAndUploadPDF() {
     console.error(err);
   } finally {
     document.body.classList.remove('pdf-export-mode');
+    element.style.background = '';
+    element.style.padding = '';
+    element.style.borderRadius = '';
     btn.innerHTML = originalText;
     btn.disabled = false;
   }
