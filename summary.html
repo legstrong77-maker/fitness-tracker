@@ -6,6 +6,7 @@
   <title>每月運動成果與回顧 | Fitness Challenge</title>
   <link rel="stylesheet" href="summary.css">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
   <header class="summary-header">
@@ -39,6 +40,9 @@
     </div>
 
     <!-- 報告區塊 -->
+    <div id="reportActions" class="hidden" style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
+      <button id="downloadPdfBtn" style="padding: 0.8rem 1.5rem; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; transition: all 0.3s ease; backdrop-filter: blur(10px);">📥 下載並備份為 PDF</button>
+    </div>
     <section id="reportSection" class="report-section hidden">
       <h2>📅 運動時間軸</h2>
       <div id="timelineContainer" class="timeline"></div>

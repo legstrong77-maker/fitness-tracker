@@ -58,6 +58,7 @@ function populateDropdowns() {
   // Add event listener only once
   if (!document.getElementById('generateBtn').dataset.bound) {
     document.getElementById('generateBtn').addEventListener('click', generateReport);
+    document.getElementById('downloadPdfBtn').addEventListener('click', downloadAndUploadPDF);
     document.getElementById('generateBtn').dataset.bound = 'true';
   }
 }
@@ -76,6 +77,7 @@ async function generateReport() {
 
   btn.disabled = true;
   loading.classList.remove('hidden');
+  document.getElementById('reportActions').classList.add('hidden');
   reportSection.classList.add('hidden');
 
   try {
@@ -102,6 +104,7 @@ async function generateReport() {
     }
 
     // Show the report section immediately
+    document.getElementById('reportActions').classList.remove('hidden');
     reportSection.classList.remove('hidden');
 
   } catch (err) {
@@ -123,4 +126,62 @@ function parseMarkdown(text) {
     .replace(/\n/gim, '<br>');
     
   return `<p>${html}</p>`;
+}
+
+async function downloadAndUploadPDF() {
+  const btn = document.getElementById('downloadPdfBtn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ 處理中...';
+  btn.disabled = true;
+
+  const element = document.getElementById('reportSection');
+  const name = document.getElementById('nameSelect').value;
+  const month = document.getElementById('monthSelect').value;
+  const filename = `${name}_${month}_轉檔回顧.pdf`;
+
+  const opt = {
+    margin:       10,
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    // 1. Generate base64
+    const pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+    
+    // 2. Upload to Drive
+    btn.innerHTML = '☁️ 正在上傳至 Google Drive...';
+    const payload = {
+      action: 'uploadPDF',
+      name: name,
+      month: month,
+      pdfBase64: pdfBase64
+    };
+    
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    
+    if (data.status === 'ok') {
+      alert('已成功備份至 Google Drive！\\n您可以前往 Drive 查看。\\n即將下載檔案至您的裝置。');
+    } else {
+      console.warn('上傳失敗:', data);
+      alert('備份至 Google Drive 失敗（可能是憑證問題），但您仍可下載檔案。');
+    }
+
+    // 3. Trigger user download
+    btn.innerHTML = '⬇️ 下載中...';
+    await html2pdf().set(opt).from(element).save();
+
+  } catch(err) {
+    console.error(err);
+    alert('匯出 PDF 發生錯誤: ' + err.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
 }

@@ -91,8 +91,8 @@ function doPost(e) {
       return jsonResponse(result);
     }
 
-    if (payload.action === 'generateGeminiSummary') {
-      const result = generateGeminiSummary(payload);
+    if (payload.action === 'uploadPDF') {
+      const result = uploadPDF(payload);
       return jsonResponse(result);
     }
 
@@ -540,4 +540,24 @@ function generateGeminiSummary(payload) {
   }
 
   return { status: 'ok', advice: advice };
+}
+
+// =====================================================================
+//  上傳 PDF 至 Google Drive
+// =====================================================================
+function uploadPDF(payload) {
+  const { name, month, pdfBase64 } = payload;
+  if (!name || !month || !pdfBase64) {
+    throw new Error('缺少必要參數');
+  }
+
+  // 取出真正的 Base64 資料段
+  const base64Data = pdfBase64.split(',')[1];
+  const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), 'application/pdf', `${name}_${month}_轉檔回顧.pdf`);
+
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return { status: 'ok', fileUrl: file.getUrl() };
 }
