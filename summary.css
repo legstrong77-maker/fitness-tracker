@@ -381,6 +381,7 @@ body::after {
 }
 
 /* 解決 PDF 匯出時的渲染問題 (移除毛玻璃以免 html2canvas 變灰塊) */
+html.pdf-export-mode,
 body.pdf-export-mode {
   overflow: visible !important;
   height: auto !important;
@@ -390,16 +391,19 @@ body.pdf-export-mode {
 
 body.pdf-export-mode::before,
 body.pdf-export-mode::after {
-  position: absolute !important; /* Fixed glowing orbs break multipage calculation */
+  display: none !important; /* Completely hide fixed glowing orbs during multi-page export */
 }
 
 body.pdf-export-mode .summary-header {
-  position: static !important; /* html2pdf breaks on sticky/absolute parents on multipage */
+  display: none !important; /* Hide header completely from print layout context to avoid breaks */
 }
 
 .pdf-export-mode * {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  animation: none !important; /* Animations leave transforms that confuse html2canvas offsets */
+  transition: none !important;
+  transform: none !important;
 }
 
 /* 確保列印文字不被截斷 */

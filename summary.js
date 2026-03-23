@@ -141,6 +141,7 @@ async function downloadAndUploadPDF() {
   
   // 暫時加上匯出模式，關閉毛玻璃以免渲染成灰塊，並給予實體深色底
   document.body.classList.add('pdf-export-mode');
+  document.documentElement.classList.add('pdf-export-mode');
   element.style.background = '#0f172a';
   element.style.padding = '30px';
   element.style.borderRadius = '16px';
@@ -159,7 +160,7 @@ async function downloadAndUploadPDF() {
       scrollY: 0
     },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: 'avoid-all', before: '.timeline-item' }
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
   try {
@@ -211,6 +212,7 @@ async function downloadAndUploadPDF() {
   } finally {
     // 復原 DOM 的樣式與圖片網址，確保網頁維持正常運作
     document.body.classList.remove('pdf-export-mode');
+    document.documentElement.classList.remove('pdf-export-mode');
     element.style.background = '';
     element.style.padding = '';
     element.style.borderRadius = '';
