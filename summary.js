@@ -145,6 +145,8 @@ async function downloadAndUploadPDF() {
   element.style.padding = '30px';
   element.style.borderRadius = '16px';
 
+  // 解決 PDF 截斷問題 (捲動到頂部重設 viewport 高度)
+  window.scrollTo(0, 0);
   const opt = {
     margin:       [10, 10, 10, 10],
     filename:     filename,
@@ -154,9 +156,7 @@ async function downloadAndUploadPDF() {
       useCORS: true, 
       backgroundColor: '#0f172a', 
       logging: false,
-      scrollY: 0,
-      windowWidth: document.documentElement.scrollWidth,
-      windowHeight: document.documentElement.scrollHeight
+      scrollY: 0
     },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak:    { mode: 'avoid-all', before: '.timeline-item' }
