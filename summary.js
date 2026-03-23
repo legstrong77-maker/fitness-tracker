@@ -55,12 +55,44 @@ function populateDropdowns() {
   if (names.includes(currentName)) nameSelect.value = currentName;
   if (months.includes(currentMonth)) monthSelect.value = currentMonth;
 
+  // 讀取網址的參數
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramName = urlParams.get('name');
+  const paramMonth = urlParams.get('month');
+
+  let shouldAutoGenerate = false;
+  
+  if (paramName && names.includes(paramName)) {
+    nameSelect.value = paramName;
+    shouldAutoGenerate = true;
+  }
+  if (paramMonth && months.includes(paramMonth)) {
+    monthSelect.value = paramMonth;
+    shouldAutoGenerate = true;
+  }
+
   // Add event listener only once
   if (!document.getElementById('generateBtn').dataset.bound) {
     document.getElementById('generateBtn').addEventListener('click', generateReport);
     document.getElementById('downloadPdfBtn').addEventListener('click', downloadAndUploadPDF);
+    document.getElementById('shareLineBtn').addEventListener('click', shareToLine); // LINE Share Hook
     document.getElementById('generateBtn').dataset.bound = 'true';
   }
+
+  // 如果有帶入 URL 參數，自動觸發產生報告
+  if (shouldAutoGenerate && nameSelect.value && monthSelect.value) {
+    generateReport();
+  }
+}
+
+// 實作分享至 LINE 邏輯
+function shareToLine() {
+  const currentUrl = encodeURIComponent(window.location.href);
+  const name = document.getElementById('nameSelect').value;
+  const text = encodeURIComponent(`快來看看 ${name} 的每月運動成果回顧！✨\n`);
+  
+  // 開啟 LINE 分享指定畫面
+  window.open(`https://line.me/R/msg/text/?${text}${currentUrl}`, '_blank');
 }
 
 async function generateReport() {
@@ -68,6 +100,12 @@ async function generateReport() {
   const month = document.getElementById('monthSelect').value;
   
   if (!name || !month) return alert('請先選擇成員與月份！');
+
+  // 更新網址列以供分享，但不重新整理網頁
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.set('name', name);
+  newUrl.searchParams.set('month', month);
+  window.history.pushState({path: newUrl.href}, '', newUrl.href);
 
   const btn = document.getElementById('generateBtn');
   const loading = document.getElementById('loadingIndicator');
