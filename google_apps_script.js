@@ -505,11 +505,12 @@ function generateGeminiSummary(payload) {
 
   promptText += `\n請根據這些打卡內容，寫下一段給 ${name} 的月底評語。評語應包含：
 1. 本月運動表現總結與肯定
-2. 針對此運動情況給予具體的專業建議
-3. 溫暖且充滿幹勁的鼓勵話語
-請使用繁體中文，語氣自然、誠懇且充滿活力，並直接稱呼對方，使用 markdown 語法加強排版。`;
+2. 預估此月份因這些運動所消耗的總推估卡路里（請根據常見運動的大約消耗與次數推敲具有說服力的估算數字，並在文字中具體醒目標示出來，如「預估一共消耗了約 XXX 大卡！」）
+3. 針對這些運動傾向，給予具體的專業建議
+4. 溫暖且充滿幹勁的鼓勵話語
+請使用繁體中文，語氣自然、誠懇且充滿活力，並直接稱呼對方，使用 Markdown 語法優雅排版（適當使用標題、粗體等）。`;
 
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + apiKey;
   const requestBody = {
     contents: [{
       parts: [{

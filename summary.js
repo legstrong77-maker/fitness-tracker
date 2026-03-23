@@ -145,6 +145,34 @@ async function generateReport() {
     document.getElementById('reportActions').classList.remove('hidden');
     reportSection.classList.remove('hidden');
 
+    // Trigger AI Fetch dynamically
+    document.getElementById('aiSummaryCard').classList.remove('hidden');
+    document.getElementById('aiLoading').classList.remove('hidden');
+    document.getElementById('aiContent').innerHTML = '';
+
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'generateGeminiSummary',
+        name: name,
+        month: month,
+        records: checkins
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('aiLoading').classList.add('hidden');
+      if (data.status === 'ok') {
+        document.getElementById('aiContent').innerHTML = parseMarkdown(data.advice);
+      } else {
+        document.getElementById('aiContent').innerHTML = `<p style="color:#f87171;">無法取得分析：${data.message}</p>`;
+      }
+    })
+    .catch(err => {
+      document.getElementById('aiLoading').classList.add('hidden');
+      document.getElementById('aiContent').innerHTML = `<p style="color:#f87171;">網路連線錯誤，無法載入 AI 分析 😢</p>`;
+    });
+
   } catch (err) {
     alert('發生錯誤：' + err.message);
   } finally {
