@@ -87,9 +87,10 @@ async function generateReport() {
       timelineContainer.innerHTML = '<p style="color:var(--text-secondary)">這個月沒有打卡紀錄喔！</p>';
     } else {
       const sorted = [...checkins].sort((a, b) => new Date(a.date) - new Date(b.date));
-      sorted.forEach(r => {
+      sorted.forEach((r, idx) => {
         const item = document.createElement('div');
         item.className = 'timeline-item';
+        item.style.animationDelay = `${idx * 0.15}s`;
         
         let html = `<div class="tl-date">${r.date}</div>`;
         if (r.description) html += `<div class="tl-desc">${r.description}</div>`;
