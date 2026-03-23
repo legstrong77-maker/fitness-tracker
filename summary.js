@@ -96,7 +96,7 @@ async function generateReport() {
         
         let html = `<div class="tl-date">${r.date}</div>`;
         if (r.description) html += `<div class="tl-desc">${r.description}</div>`;
-        if (r.photoUrl) html += `<img src="${r.photoUrl}" crossorigin="anonymous" alt="打卡照" class="tl-photo">`;
+        if (r.photoUrl) html += `<img src="${r.photoUrl}" alt="打卡照" class="tl-photo">`;
         
         item.innerHTML = html;
         timelineContainer.appendChild(item);
