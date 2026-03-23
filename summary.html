@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每月運動成果與回顧 | Fitness Challenge</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="summary.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="summary-header">
+    <div class="header-content">
+      <a href="index.html" class="back-link">← 返回日曆</a>
+      <h1>🌟 每月運動成果與回顧</h1>
+    </div>
+  </header>
+
+  <main class="summary-main">
+    <section class="controls-section card">
+      <div class="control-group">
+        <label for="nameSelect">選擇成員：</label>
+        <select id="nameSelect">
+          <option value="">載入中...</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="monthSelect">選擇月份：</label>
+        <select id="monthSelect">
+          <option value="">載入中...</option>
+        </select>
+      </div>
+      <button id="generateBtn" class="btn-primary">✨ 產生回顧報告</button>
+    </section>
+
+    <!-- 載入中動畫 -->
+    <div id="loadingIndicator" class="hidden">
+      <div class="spinner-large"></div>
+      <p>正在呼叫 Gemini AI 分析您的運動數據，請稍候...</p>
+    </div>
+
+    <!-- 報告區塊 -->
+    <section id="reportSection" class="report-section hidden">
+      <h2>📅 運動時間軸</h2>
+      <div id="timelineContainer" class="timeline"></div>
+
+      <div class="ai-advice-card">
+        <h3>🤖 Gemini 教練的專屬建議</h3>
+        <div id="aiAdviceContent" class="ai-content"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="summary.js"></script>
+</body>
+</html>

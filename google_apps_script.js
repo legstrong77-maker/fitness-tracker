@@ -86,6 +86,16 @@ function doPost(e) {
       return jsonResponse(result);
     }
 
+    if (payload.action === 'generateGeminiSummary') {
+      const result = generateGeminiSummary(payload);
+      return jsonResponse(result);
+    }
+
+    if (payload.action === 'generateGeminiSummary') {
+      const result = generateGeminiSummary(payload);
+      return jsonResponse(result);
+    }
+
     return jsonResponse({ status: 'error', message: 'Unknown action' });
   } catch (err) {
     return jsonResponse({ status: 'error', message: err.message });
@@ -466,3 +476,68 @@ function handleLineWebhook(events) {
   return ContentService.createTextOutput('OK');
 }
 
+// =====================================================================
+//  呼叫 Gemini AI 產生每月回顧
+// =====================================================================
+function generateGeminiSummary(payload) {
+  const { name, month, records } = payload;
+  if (!name || !month || !records) {
+    throw new Error('缺少產生回顧所需的參數(name, month, records)');
+  }
+
+  const configs = getConfigs();
+  const apiKey = configs['GEMINI_API_KEY'];
+  if (!apiKey) {
+    throw new Error('系統尚未設定 GEMINI_API_KEY，無法呼叫 AI 產生評語。');
+  }
+
+  // 組合 Prompt
+  let promptText = `請你扮演一位專業且熱情的健身教練。以下是 ${name} 在 ${month} 月份每一天的運動打卡紀錄（包含日期與說明）：\n\n`;
+  
+  if (records.length === 0) {
+    promptText += "這個月沒有任何打卡紀錄。\n";
+  } else {
+    records.sort((a, b) => new Date(a.date) - new Date(b.date));
+    records.forEach((r, idx) => {
+      promptText += `${idx + 1}. 日期: ${r.date}, 紀錄: ${r.description || '無特別說明'}\n`;
+    });
+  }
+
+  promptText += `\n請根據這些打卡內容，寫下一段給 ${name} 的月底評語。評語應包含：
+1. 本月運動表現總結與肯定
+2. 針對此運動情況給予具體的專業建議
+3. 溫暖且充滿幹勁的鼓勵話語
+請使用繁體中文，語氣自然、誠懇且充滿活力，並直接稱呼對方，使用 markdown 語法加強排版。`;
+
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=' + apiKey;
+  const requestBody = {
+    contents: [{
+      parts: [{
+        text: promptText
+      }]
+    }]
+  };
+
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(requestBody),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const json = JSON.parse(response.getContentText());
+
+  if (json.error) {
+    throw new Error('Gemini API 錯誤: ' + json.error.message);
+  }
+
+  let advice = '';
+  if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts) {
+    advice = json.candidates[0].content.parts[0].text;
+  } else {
+    throw new Error('無法從 Gemini 取得有效的建議。');
+  }
+
+  return { status: 'ok', advice: advice };
+}
