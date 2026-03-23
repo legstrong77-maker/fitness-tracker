@@ -159,13 +159,16 @@ async function downloadAndUploadPDF() {
   };
 
   try {
-    // 預載圖片以防空白，並且使用 CORS Proxy 繞過 Google Drive 跨域限制
+    // 預載圖片以防空白，並且使用安全的圖片 Proxy 繞過 Google Drive 跨域限制
     const imgs = element.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img => {
       const originalSrc = img.src;
-      // 替換為 corsproxy 解決 HTML2Canvas 讀不到 drive 圖片的跨域錯誤
-      if (originalSrc.includes('drive.google.com') && !originalSrc.includes('corsproxy.io')) {
-        img.src = 'https://corsproxy.io/?' + encodeURIComponent(originalSrc);
+      img.dataset.originalSrc = originalSrc; // 記住原本的網址，以利事後復原
+      
+      // 替換為 wsrv.nl 專門用來處理圖片跨域的穩定服務
+      if (originalSrc.includes('drive.google.com') && !originalSrc.includes('wsrv.nl')) {
+        img.crossOrigin = "anonymous";
+        img.src = 'https://wsrv.nl/?url=' + encodeURIComponent(originalSrc);
       }
 
       if (img.complete) return Promise.resolve();
@@ -202,10 +205,20 @@ async function downloadAndUploadPDF() {
   } catch(err) {
     console.error(err);
   } finally {
+    // 復原 DOM 的樣式與圖片網址，確保網頁維持正常運作
     document.body.classList.remove('pdf-export-mode');
     element.style.background = '';
     element.style.padding = '';
     element.style.borderRadius = '';
+    
+    const imgs = element.querySelectorAll('img');
+    imgs.forEach(img => {
+      if (img.dataset.originalSrc) {
+        img.removeAttribute('crossorigin');
+        img.src = img.dataset.originalSrc;
+      }
+    });
+
     btn.innerHTML = originalText;
     btn.disabled = false;
   }
