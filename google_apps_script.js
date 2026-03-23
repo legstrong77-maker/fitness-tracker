@@ -510,7 +510,7 @@ function generateGeminiSummary(payload) {
 4. 溫暖且充滿幹勁的鼓勵話語
 請使用繁體中文，語氣自然、誠懇且充滿活力，並直接稱呼對方，使用 Markdown 語法優雅排版（適當使用標題、粗體等）。`;
 
-  const url = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
   const requestBody = {
     contents: [{
       parts: [{
