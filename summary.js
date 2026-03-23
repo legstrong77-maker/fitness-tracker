@@ -96,7 +96,7 @@ async function generateReport() {
         
         let html = `<div class="tl-date">${r.date}</div>`;
         if (r.description) html += `<div class="tl-desc">${r.description}</div>`;
-        if (r.photoUrl) html += `<img src="${r.photoUrl}" alt="打卡照" class="tl-photo">`;
+        if (r.photoUrl) html += `<img src="${r.photoUrl}" crossorigin="anonymous" alt="打卡照" class="tl-photo">`;
         
         item.innerHTML = html;
         timelineContainer.appendChild(item);
@@ -134,70 +134,40 @@ async function downloadAndUploadPDF() {
   btn.innerHTML = '⏳ 處理中...';
   btn.disabled = true;
 
+  const element = document.getElementById('reportSection');
   const name = document.getElementById('nameSelect').value;
   const month = document.getElementById('monthSelect').value;
   const filename = `${name}_${month}_轉檔回顧.pdf`;
   
-  const checkins = allRecords.filter(r => r.name === name && r.date.startsWith(month));
-  const sorted = [...checkins].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  // 建立乾淨、無特效的 DOM 專供 PDF 輸出 (避免 html2canvas 渲染玻璃特效失敗變灰塊)
-  const printContainer = document.createElement('div');
-  printContainer.style.width = '800px';
-  printContainer.style.padding = '40px 60px';
-  printContainer.style.background = '#ffffff';
-  printContainer.style.color = '#1e293b';
-  printContainer.style.fontFamily = 'sans-serif';
-  
-  let html = `<h1 style="text-align: center; color: #0f172a; margin-bottom: 40px; font-size: 32px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">${name} 的運動回顧 (${month.replace('-',' 年 ')} 月)</h1>`;
-  
-  if (sorted.length === 0) {
-    html += `<p style="text-align: center; color: #64748b; font-size: 18px;">這個月沒有任何打卡紀錄喔！</p>`;
-  } else {
-    sorted.forEach(r => {
-      html += `
-        <div style="margin-bottom: 40px; border-left: 4px solid #6366f1; padding-left: 20px; page-break-inside: avoid; background: #f8fafc; padding: 20px; border-radius: 8px;">
-          <h2 style="color: #4f46e5; margin: 0 0 10px 0; font-size: 22px;">${r.date}</h2>
-          <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.6; color: #334155;">${r.description || '無特別說明'}</p>
-          ${r.photoUrl ? `<img src="${r.photoUrl}" crossorigin="anonymous" style="max-width: 100%; height: auto; max-height: 400px; border-radius: 8px; display: block; margin-top: 10px;">` : ''}
-        </div>
-      `;
-    });
-  }
-
-  printContainer.innerHTML = html;
-  
-  // 掛載到畫面上才能畫出來
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'absolute';
-  wrapper.style.left = '-10000px';
-  wrapper.style.top = '0';
-  wrapper.appendChild(printContainer);
-  document.body.appendChild(wrapper);
+  // 暫時加上匯出模式，關閉毛玻璃以免渲染成灰塊
+  document.body.classList.add('pdf-export-mode');
 
   const opt = {
-    margin:       15,
+    margin:       [10, 10, 10, 10],
     filename:     filename,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    image:        { type: 'jpeg', quality: 1 },
+    html2canvas:  { 
+      scale: 2, 
+      useCORS: true, 
+      backgroundColor: '#0f172a', 
+      logging: false 
+    },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
   try {
-    // 預載圖片確保不會破圖
-    const imgs = printContainer.querySelectorAll('img');
-    for (let i = 0; i < imgs.length; i++) {
-        await new Promise((resolve) => {
-            if (imgs[i].complete) resolve();
-            else {
-                imgs[i].onload = resolve;
-                imgs[i].onerror = resolve; // 即使出錯也繼續
-            }
-        });
-    }
+    // 預載圖片以防空白
+    const imgs = element.querySelectorAll('img');
+    await Promise.all(Array.from(imgs).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
 
     // 1. 取得 Base64
-    const pdfBase64 = await html2pdf().set(opt).from(printContainer).outputPdf('datauristring');
+    const pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
     
     // 2. 默默背景上傳
     const payload = {
@@ -207,20 +177,20 @@ async function downloadAndUploadPDF() {
       pdfBase64: pdfBase64
     };
     
-    // 不用 await，也不 alert
+    // 完全不跳出警告、不等待完成
     fetch(API_URL, {
       method: 'POST',
       body: JSON.stringify(payload)
-    }).catch(e => console.log('Silent upload error', e));
+    }).catch(e => console.log(e));
 
     // 3. 觸發本地下載
-    await html2pdf().set(opt).from(printContainer).save();
+    btn.innerHTML = '⬇️ 下載中...';
+    await html2pdf().set(opt).from(element).save();
 
   } catch(err) {
     console.error(err);
-    alert('匯出 PDF 發生錯誤: ' + err.message);
   } finally {
-    document.body.removeChild(wrapper);
+    document.body.classList.remove('pdf-export-mode');
     btn.innerHTML = originalText;
     btn.disabled = false;
   }
