@@ -321,10 +321,12 @@ function spin() {
   const winnerEndAngle = winnerStartAngle + participants[winnerIndex].probability * 360;
   const winnerMiddle = winnerStartAngle + (winnerEndAngle - winnerStartAngle) / 2;
 
-  // 指標在12點鐘方向 (270度)，轉盤需要停在讓贏家對著指標的位置
-  // 目標角度 = 270 - winnerMiddle + 隨機偏移 (讓每次都不一樣)
+  // 指標固定在12點鐘方向（頂部）
+  // 轉盤從12點鐘開始畫，winnerMiddle 是從頂部順時針算的角度
+  // CSS rotate(X deg) 順時針旋轉後，指標指向原始 (360 - X%360)° 的位置
+  // 所以要讓指標指向 winnerMiddle，需要 totalRotation % 360 = (360 - winnerMiddle)
   const randomOffset = (Math.random() - 0.5) * (participants[winnerIndex].probability * 360 * 0.6);
-  const targetDeg = 270 - winnerMiddle + randomOffset;
+  const targetDeg = 360 - winnerMiddle + randomOffset;
 
   // 至少轉 5 到 8 圈
   const extraSpins = (5 + Math.floor(Math.random() * 4)) * 360;
