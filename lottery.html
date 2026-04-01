@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎰 每月抽獎 | Fitness Challenge</title>
+  <meta name="description" content="根據運動天數加權的公平抽籤系統">
+  <link rel="stylesheet" href="lottery.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 背景粒子 -->
+  <canvas id="particleCanvas"></canvas>
+
+  <header class="lottery-header">
+    <a href="index.html" class="back-link">← 返回打卡日曆</a>
+    <h1>🎰 每月運動抽獎</h1>
+    <p class="subtitle">運動越多，中獎越高！以運動天數作為權重的公平抽籤</p>
+  </header>
+
+  <main class="lottery-main">
+    <!-- 月份選擇 -->
+    <section class="controls-card">
+      <div class="control-row">
+        <label for="lotteryMonthSelect">🗓️ 選擇月份</label>
+        <select id="lotteryMonthSelect">
+          <option value="">載入中...</option>
+        </select>
+      </div>
+      <div id="participantInfo" class="participant-info"></div>
+    </section>
+
+    <!-- 轉盤區域 -->
+    <section class="wheel-section">
+      <div class="wheel-container">
+        <div class="wheel-pointer">▼</div>
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+      </div>
+      <button id="spinBtn" class="spin-btn" disabled>
+        <span class="spin-btn-text">🎯 開始抽籤</span>
+        <span class="spin-btn-loading hidden">⏳ 轉動中...</span>
+      </button>
+    </section>
+
+    <!-- 參與者權重表 -->
+    <section id="weightTable" class="weight-table-card hidden">
+      <h2>📊 各人中籤機率</h2>
+      <div class="weight-table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>排名</th>
+              <th>姓名</th>
+              <th>運動天數</th>
+              <th>中籤機率</th>
+            </tr>
+          </thead>
+          <tbody id="weightTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- 中獎彈窗 -->
+  <div id="resultOverlay" class="result-overlay">
+    <div class="result-modal">
+      <div class="confetti-container" id="confettiContainer"></div>
+      <div class="result-content">
+        <div class="trophy-icon">🏆</div>
+        <h2 class="result-title">恭喜中獎！</h2>
+        <div class="winner-name" id="winnerName"></div>
+        <div class="winner-stats" id="winnerStats"></div>
+        <button id="resultCloseBtn" class="result-close-btn">🎉 太棒了！</button>
+        <button id="reSpinBtn" class="respin-btn">🔄 再抽一次</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="lottery.js"></script>
+</body>
+</html>
