@@ -114,7 +114,10 @@
       <section class="leaderboard-section card">
         <div class="section-header">
           <h2 class="section-title">🏅 排行榜</h2>
-          <span class="refresh-hint" id="refreshBtn">↺ 重新整理</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <a href="lottery.html" class="btn-primary" style="text-decoration:none; padding:4px 10px; font-size:0.85rem; background:linear-gradient(135deg,#f59e0b,#f43f5e); white-space:nowrap;" title="每月抽獎">🎰 抽獎</a>
+            <span class="refresh-hint" id="refreshBtn">↺ 重新整理</span>
+          </div>
         </div>
         <div class="month-selector-row">
           <select id="leaderboardMonthSelect" class="month-select"></select>
